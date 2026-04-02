@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npx vite:*)",
+      "Bash(timeout 90 sh -c 'npx vite build')",
+      "Bash(echo \"Done: $?\")",
+      "Bash(gtimeout 90 npx vite build)",
+      "Bash(node -e \":*)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(node:*)"
+    ]
+  }
+}
