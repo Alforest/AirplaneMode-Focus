@@ -1,3 +1,6 @@
+import { airlinesByAirport, FALLBACK_AIRLINES, type AirlineEntry } from '../data/airlineRoutes';
+import { AIRCRAFT_TIER, type AircraftTier } from '../data/aircraftTiers';
+
 export interface FlightInfo {
   airline: string;
   flightNumber: string;
@@ -8,34 +11,6 @@ export interface FlightInfo {
   passengerName: string;
   terminal: string;
 }
-
-const AIRLINES = [
-  { name: 'Delta Air Lines',    code: 'DL' },
-  { name: 'United Airlines',    code: 'UA' },
-  { name: 'American Airlines',  code: 'AA' },
-  { name: 'Southwest Airlines', code: 'WN' },
-  { name: 'Emirates',           code: 'EK' },
-  { name: 'Lufthansa',          code: 'LH' },
-  { name: 'Air France',         code: 'AF' },
-  { name: 'British Airways',    code: 'BA' },
-  { name: 'Singapore Airlines', code: 'SQ' },
-  { name: 'Japan Airlines',     code: 'JL' },
-  { name: 'Qantas',             code: 'QF' },
-  { name: 'Turkish Airlines',   code: 'TK' },
-  { name: 'KLM',                code: 'KL' },
-  { name: 'Cathay Pacific',     code: 'CX' },
-  { name: 'Qatar Airways',      code: 'QR' },
-];
-
-const AIRCRAFT = [
-  'Boeing 737-800',
-  'Airbus A320',
-  'Boeing 787-9',
-  'Airbus A350-900',
-  'Embraer E195',
-  'Boeing 777-300ER',
-  'Airbus A321neo',
-];
 
 const SEAT_CLASSES = ['Economy', 'Premium Economy', 'Business'];
 const SEAT_ROWS_ECONOMY = [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
@@ -59,9 +34,30 @@ function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export function generateFlightInfo(): FlightInfo {
-  const airline = pick(AIRLINES);
-  const aircraft = pick(AIRCRAFT);
+// Returns preferred tier first, then fallback tiers, for the given distance
+function preferredTiers(distanceKm: number): AircraftTier[] {
+  if (distanceKm < 1_500)  return ['regional', 'narrowbody'];
+  if (distanceKm < 4_500)  return ['narrowbody', 'regional', 'widebody'];
+  return ['widebody', 'narrowbody'];
+}
+
+function pickAircraft(entry: AirlineEntry, distanceKm: number): string {
+  const tiers = preferredTiers(distanceKm);
+  for (const tier of tiers) {
+    const candidates = entry.aircraft.filter(a => AIRCRAFT_TIER[a] === tier);
+    if (candidates.length > 0) return pick(candidates);
+  }
+  // No tier match — use any aircraft this airline operates from this airport
+  return pick(entry.aircraft);
+}
+
+export function generateFlightInfo(departureIata: string, distanceKm: number): FlightInfo {
+  const airlinePool = airlinesByAirport[departureIata]?.length
+    ? airlinesByAirport[departureIata]
+    : FALLBACK_AIRLINES;
+
+  const airline = pick(airlinePool);
+  const aircraft = pickAircraft(airline, distanceKm);
   const seatClass = pick(SEAT_CLASSES);
   const flightNumber = `${airline.code}${randInt(1000, 9999)}`;
 

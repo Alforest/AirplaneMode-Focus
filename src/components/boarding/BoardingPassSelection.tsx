@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFlightStore } from '../../store/flightStore';
 import { generateFlightInfo } from '../../utils/generateFlightInfo';
+import { haversineKm } from '../../utils/flightCalculations';
 import BoardingPassCard from './BoardingPassCard';
 
 const BoardingPassSelection: React.FC = () => {
@@ -15,10 +16,15 @@ const BoardingPassSelection: React.FC = () => {
     setPhase,
   } = useFlightStore();
 
-  // Generate flight info for each destination once (stable)
+  // Generate flight info for each destination once (stable), using departure airport and route distance for realism
   const flightInfos = useMemo(
-    () => generatedDestinations.map(() => generateFlightInfo()),
-    [generatedDestinations]
+    () => generatedDestinations.map(dest => {
+      const distKm = departure
+        ? haversineKm(departure.lat, departure.lon, dest.lat, dest.lon)
+        : 2000;
+      return generateFlightInfo(departure?.iata ?? '', distKm);
+    }),
+    [generatedDestinations, departure]
   );
 
   const [selectedIdx, setSelectedIdx] = React.useState<number | null>(null);
