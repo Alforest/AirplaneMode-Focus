@@ -8,14 +8,11 @@ export default defineConfig({
     include: ['framer-motion'],
   },
   build: {
-    target: 'es2019',
+    target: 'es2020',
     rollupOptions: {
-      external: ['mapbox-gl'],
       output: {
-        globals: {
-          'mapbox-gl': 'mapboxgl',
-        },
         manualChunks: {
+          'mapbox': ['mapbox-gl'],
           'framer': ['framer-motion'],
           'react-vendor': ['react', 'react-dom'],
           'zustand': ['zustand'],
