@@ -55,11 +55,9 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="font-display text-5xl md:text-7xl text-muted-white mb-4 leading-tight"
+          className="font-serif text-5xl md:text-7xl text-muted-white mb-4 leading-tight"
         >
-          AirplaneMode
-          <br />
-          <span className="text-gold">Focus</span>
+          Focus<span className="text-gold">Flight</span>
         </motion.h1>
 
         <motion.p
@@ -82,6 +80,29 @@ const Hero: React.FC = () => {
           <InputForm />
         </motion.div>
       </div>
+
+      {/* Scroll nudge — departures board + flight log live below the fold */}
+      <motion.button
+        type="button"
+        onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 1.6 }}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5
+        text-muted-white/30 hover:text-gold/70 transition-colors duration-200 cursor-pointer"
+        aria-label="Scroll down to the departure board and your flight log"
+      >
+        <span className="font-mono text-[0.65rem] tracking-[0.2em] uppercase">
+          Departures &amp; flight log
+        </span>
+        <motion.svg
+          width="18" height="18" viewBox="0 0 24 24" fill="none"
+          animate={{ y: [0, 6, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </motion.svg>
+      </motion.button>
 
       {/* Bottom runway lights */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />

@@ -1,171 +1,69 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Airport, findAirportByIata } from '../../data/airports';
-import { findDestinations } from '../../utils/flightCalculations';
+import React, { useEffect, useState } from 'react';
+import { Airport } from '../../data/airports';
+import { BoardFlight, randomFlightFrom } from '../../utils/departureBoard';
 import { useFlightStore } from '../../store/flightStore';
+import FlipText, { PagedFlipText } from '../shared/FlipText';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const SCRAMBLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-const PRESETS = [
-  { label: '30 MIN', minutes: 30 },
-  { label: '1 HR',   minutes: 60 },
-  { label: '2 HR',   minutes: 120 },
-  { label: '4 HR',   minutes: 240 },
-  { label: '8 HR',   minutes: 480 },
-];
 
 const POOL = [
   'JFK', 'LAX', 'LHR', 'CDG', 'DXB', 'NRT',
   'SYD', 'SIN', 'YYZ', 'AMS', 'FRA', 'ICN', 'HKG', 'GRU', 'MEX',
 ];
 
-const AIRLINES = ['CA', 'ZA', 'CL', 'ST', 'CX', 'AT', 'KL', 'LH', 'SK', 'AM'];
-
-function randFlight() {
-  const al = AIRLINES[Math.floor(Math.random() * AIRLINES.length)];
-  return `${al} ${Math.floor(Math.random() * 900) + 100}`;
-}
-
 // ---------------------------------------------------------------------------
-// Row type + generation
+// Row type + generation — real flights from a random hub
 // ---------------------------------------------------------------------------
 
 interface Row {
   id: number;
   fromAirport: Airport;
-  toAirport: Airport;
+  flight: BoardFlight;
   from: string;   // city name, uppercase, truncated — display only
   to: string;
   duration: string;
-  flight: string;
+  flightCode: string;
 }
 
 let _id = 0;
 
-function makeRow(minutes: number): Row | null {
+// "Sydney (Mascot)" / "Darlington, County Durham" → "SYDNEY" / "DARLINGTON"
+function boardCity(city: string): string {
+  return city.split(/[,(]/)[0].trim().toUpperCase();
+}
+
+function makeRow(): Row | null {
   const iata = POOL[Math.floor(Math.random() * POOL.length)];
-  const hub = findAirportByIata(iata);
-  if (!hub) return null;
+  const result = randomFlightFrom(iata);
+  if (!result) return null;
 
-  const dests = findDestinations(hub, minutes);
-  if (!dests.length) return null;
-
-  const dest = dests[Math.floor(Math.random() * dests.length)];
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
+  const { departure, flight } = result;
+  const h = Math.floor(flight.durationMinutes / 60);
+  const m = flight.durationMinutes % 60;
 
   return {
     id: _id++,
-    fromAirport: hub,
-    toAirport: dest,
-    from: hub.city.toUpperCase().slice(0, 11),
-    to:   dest.city.toUpperCase().slice(0, 11),
+    fromAirport: departure,
+    flight,
+    from: boardCity(departure.city),
+    to:   boardCity(flight.destination.city),
     duration: `${h}H ${String(m).padStart(2, '0')}M`,
-    flight: randFlight(),
+    flightCode: flight.flightNumber,
   };
 }
 
-function buildRows(minutes: number, count = 6): Row[] {
+function buildRows(count = 6): Row[] {
   const out: Row[] = [];
   let tries = 0;
   while (out.length < count && tries < 40) {
-    const r = makeRow(minutes);
+    const r = makeRow();
     if (r) out.push(r);
     tries++;
   }
   return out;
 }
-
-// ---------------------------------------------------------------------------
-// FlipChar — scrambles on char change OR external trigger (hover)
-// ---------------------------------------------------------------------------
-
-const FlipChar: React.FC<{ char: string; idx: number; trigger?: number }> = ({
-  char, idx, trigger = 0,
-}) => {
-  const [shown, setShown] = useState(char);
-  const prevChar = useRef(char);
-  const t1 = useRef<ReturnType<typeof setTimeout>>();
-  const t2 = useRef<ReturnType<typeof setInterval>>();
-
-  const scrambleTo = (target: string) => {
-    clearTimeout(t1.current);
-    clearInterval(t2.current);
-    let count = 0;
-    const flips = 4 + Math.floor(Math.random() * 5);
-    t1.current = setTimeout(() => {
-      t2.current = setInterval(() => {
-        if (count++ >= flips) {
-          clearInterval(t2.current);
-          setShown(target);
-        } else {
-          setShown(SCRAMBLE[Math.floor(Math.random() * SCRAMBLE.length)]);
-        }
-      }, 55);
-    }, idx * 45);
-  };
-
-  // Char changed → scramble to new char
-  useEffect(() => {
-    if (prevChar.current === char) return;
-    prevChar.current = char;
-    scrambleTo(char);
-    return () => { clearTimeout(t1.current); clearInterval(t2.current); };
-  }, [char]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Hover trigger → scramble then settle back to same char
-  useEffect(() => {
-    if (trigger === 0) return;
-    scrambleTo(char);
-    return () => { clearTimeout(t1.current); clearInterval(t2.current); };
-  }, [trigger]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (char === ' ') return <span style={{ display: 'inline-block', width: '0.6rem' }} />;
-
-  return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '1.2rem',
-      height: '1.75rem',
-      background: '#07090e',
-      borderRadius: '2px',
-      fontFamily: "'JetBrains Mono', monospace",
-      fontSize: '0.8rem',
-      fontWeight: 700,
-      color: '#f2c84b',
-      position: 'relative',
-      flexShrink: 0,
-      marginRight: '2px',
-      userSelect: 'none',
-    }}>
-      {shown}
-      <span style={{
-        position: 'absolute',
-        left: 0, right: 0, top: '50%',
-        height: '1px',
-        background: 'rgba(0,0,0,0.55)',
-        pointerEvents: 'none',
-      }} />
-    </span>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// FlipText
-// ---------------------------------------------------------------------------
-
-const FlipText: React.FC<{ text: string; trigger?: number }> = ({ text, trigger }) => (
-  <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'nowrap' }}>
-    {text.split('').map((ch, i) => (
-      <FlipChar key={i} char={ch} idx={i} trigger={trigger} />
-    ))}
-  </span>
-);
 
 // ---------------------------------------------------------------------------
 // BoardRow — has its own hover state so trigger works per-row
@@ -215,21 +113,21 @@ const BoardRow: React.FC<BoardRowProps> = ({ row, isLast, onSelect }) => {
         flexShrink: 0,
         transition: 'color 0.15s ease',
       }}>
-        {row.flight}
+        {row.flightCode}
       </span>
 
       {/* FROM city */}
       <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
-        <FlipText text={row.from} trigger={trigger} />
+        <PagedFlipText text={row.from} trigger={trigger} />
       </div>
 
       {/* TO city */}
       <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
-        <FlipText text={row.to} trigger={trigger} />
+        <PagedFlipText text={row.to} trigger={trigger} />
       </div>
 
       {/* Duration */}
-      <div style={{ width: '5rem', flexShrink: 0, overflow: 'hidden' }}>
+      <div style={{ width: '8.5rem', flexShrink: 0, overflow: 'hidden' }}>
         <FlipText text={row.duration} trigger={trigger} />
       </div>
 
@@ -243,7 +141,7 @@ const BoardRow: React.FC<BoardRowProps> = ({ row, isLast, onSelect }) => {
             letterSpacing: '0.06em',
             whiteSpace: 'nowrap',
           }}>
-            ↗ DEPART
+            ↗ BOARD
           </span>
         ) : (
           <>
@@ -291,33 +189,27 @@ const BoardHeader: React.FC = () => (
     <span style={{ ...COL_LABEL, width: '4.5rem', flexShrink: 0 }}>Flight</span>
     <span style={{ ...COL_LABEL, flex: 1 }}>From</span>
     <span style={{ ...COL_LABEL, flex: 1 }}>Destination</span>
-    <span style={{ ...COL_LABEL, width: '5rem', flexShrink: 0 }}>Duration</span>
+    <span style={{ ...COL_LABEL, width: '8.5rem', flexShrink: 0 }}>Duration</span>
     <span style={{ ...COL_LABEL, width: '5.5rem', flexShrink: 0 }} className="hidden sm:block">Status</span>
   </div>
 );
 
 // ---------------------------------------------------------------------------
-// DepartureBoard
+// DepartureBoard — ambient "now boarding worldwide" board on the landing page.
+// Every row is a real route; clicking one boards that flight directly.
 // ---------------------------------------------------------------------------
 
 const DepartureBoard: React.FC = () => {
-  const { setDeparture, setGeneratedDestinations, setDuration, setPhase } = useFlightStore();
+  const { selectFlight } = useFlightStore();
 
-  const [minutes, setMinutes] = useState(120);
-  const [rows, setRows] = useState<Row[]>(() => buildRows(120));
+  const [rows, setRows] = useState<Row[]>(() => buildRows());
   const [colon, setColon] = useState(true);
   const [nowStr, setNowStr] = useState('');
-  const minutesRef = useRef(minutes);
-  minutesRef.current = minutes;
-
-  useEffect(() => {
-    setRows(buildRows(minutes));
-  }, [minutes]);
 
   // Auto-cycle one row every 4s — both FROM and TO flip
   useEffect(() => {
     const id = setInterval(() => {
-      const newRow = makeRow(minutesRef.current);
+      const newRow = makeRow();
       if (!newRow) return;
       setRows(prev => {
         const next = [...prev];
@@ -344,15 +236,7 @@ const DepartureBoard: React.FC = () => {
   }, []);
 
   const handleSelect = (row: Row) => {
-    // Get 3 destinations from this departure, putting the clicked one first
-    const allDests = findDestinations(row.fromAirport, minutes);
-    const others = allDests.filter(d => d.iata !== row.toAirport.iata);
-    const ordered = [row.toAirport, ...others].slice(0, 3);
-
-    setDeparture(row.fromAirport);
-    setGeneratedDestinations(ordered);
-    setDuration(minutes);
-    setPhase('boarding');
+    selectFlight(row.fromAirport, row.flight);
   };
 
   return (
@@ -362,32 +246,12 @@ const DepartureBoard: React.FC = () => {
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <span style={{ color: 'rgba(240,192,64,0.35)', fontFamily: "'JetBrains Mono',monospace", fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-            Departures
+            Now boarding worldwide
           </span>
           <div className="flex-1 h-px" style={{ background: 'rgba(240,192,64,0.08)' }} />
           <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '0.75rem', color: 'rgba(240,192,64,0.3)', opacity: colon ? 1 : 0.5, transition: 'opacity 0.1s' }}>
             {nowStr}
           </span>
-        </div>
-
-        {/* Duration chips */}
-        <div className="flex gap-2 mb-5 flex-wrap">
-          {PRESETS.map(p => (
-            <button
-              key={p.minutes}
-              onClick={() => setMinutes(p.minutes)}
-              style={minutes === p.minutes ? {
-                background: '#f0c040', color: '#0a0e1a', fontWeight: 700,
-                border: '1px solid transparent',
-              } : {
-                background: 'transparent', color: 'rgba(208,216,232,0.35)',
-                border: '1px solid rgba(240,192,64,0.12)',
-              }}
-              className="px-4 py-1.5 rounded-lg font-mono text-xs tracking-widest uppercase transition-all duration-200 hover:border-gold/30"
-            >
-              {p.label}
-            </button>
-          ))}
         </div>
 
         {/* Board */}
@@ -418,10 +282,7 @@ const DepartureBoard: React.FC = () => {
           textTransform: 'uppercase',
           color: 'rgba(208,216,232,0.12)',
         }}>
-          {minutes < 60
-            ? `${minutes}m`
-            : `${Math.floor(minutes / 60)}h${minutes % 60 ? ` ${minutes % 60}m` : ''}`
-          } study duration · click any flight to depart
+          real routes from major hubs · click any flight to board
         </p>
 
       </div>

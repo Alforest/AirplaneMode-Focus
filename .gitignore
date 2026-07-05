@@ -21,3 +21,6 @@ npm-debug.log*
 
 # Vite
 *.local
+
+# Raw data inputs for scripts/build*.ts (fetched on demand)
+scripts/data/

@@ -11,11 +11,12 @@ export default defineConfig({
     target: 'es2020',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'mapbox': ['mapbox-gl'],
-          'framer': ['framer-motion'],
-          'react-vendor': ['react', 'react-dom'],
-          'zustand': ['zustand'],
+        manualChunks(id) {
+          if (id.includes('/src/data/')) return 'flight-data';
+          if (id.includes('node_modules/mapbox-gl')) return 'mapbox';
+          if (id.includes('node_modules/framer-motion')) return 'framer';
+          if (id.includes('node_modules/zustand')) return 'zustand';
+          if (id.includes('node_modules/react')) return 'react-vendor';
         },
       },
     },

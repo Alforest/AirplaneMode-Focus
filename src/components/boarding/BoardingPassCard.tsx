@@ -222,7 +222,7 @@ const BoardingPassCard: React.FC<BoardingPassCardProps> = ({
         style={{ background: 'rgba(240,192,64,0.05)' }}
       >
         <div className="bg-gold text-navy font-mono font-bold px-6 py-2 rounded-full text-sm tracking-widest uppercase">
-          Select This Flight
+          Board This Flight
         </div>
       </motion.div>
     </motion.div>

@@ -1,4 +1,4 @@
-import { airlinesByAirport, FALLBACK_AIRLINES, type AirlineEntry } from '../data/airlineRoutes';
+import { AIRLINES, AIRCRAFT, routesByAirport, FALLBACK_AIRLINES } from '../data/airlineRoutes';
 import { AIRCRAFT_TIER, type AircraftTier } from '../data/aircraftTiers';
 
 export interface FlightInfo {
@@ -10,6 +10,13 @@ export interface FlightInfo {
   seatClass: string;
   passengerName: string;
   terminal: string;
+}
+
+/** A carrier operating a specific leg, with the equipment it flies on it */
+export interface RouteCarrier {
+  name: string;
+  code: string;
+  aircraft: string[];
 }
 
 const SEAT_CLASSES = ['Economy', 'Premium Economy', 'Business'];
@@ -34,6 +41,35 @@ function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+/** Carriers actually flying departure → destination nonstop (empty if no data) */
+export function getCarriersForRoute(departureIata: string, destinationIata: string): RouteCarrier[] {
+  const legs = routesByAirport[departureIata];
+  const leg = legs?.find(([dest]) => dest === destinationIata);
+  if (!leg) return [];
+  return leg[1].map(([airlineIdx, aircraftIdxs]) => ({
+    ...AIRLINES[airlineIdx],
+    aircraft: aircraftIdxs.map(i => AIRCRAFT[i]),
+  }));
+}
+
+/** All carriers departing an airport, across all its legs (fallback pool) */
+function getCarriersAtAirport(departureIata: string): RouteCarrier[] {
+  const legs = routesByAirport[departureIata];
+  if (!legs) return [];
+  const byAirline = new Map<number, Set<number>>();
+  for (const [, options] of legs) {
+    for (const [airlineIdx, aircraftIdxs] of options) {
+      if (!byAirline.has(airlineIdx)) byAirline.set(airlineIdx, new Set());
+      const set = byAirline.get(airlineIdx)!;
+      for (const i of aircraftIdxs) set.add(i);
+    }
+  }
+  return [...byAirline.entries()].map(([airlineIdx, aircraftIdxs]) => ({
+    ...AIRLINES[airlineIdx],
+    aircraft: [...aircraftIdxs].map(i => AIRCRAFT[i]),
+  }));
+}
+
 // Returns preferred tier first, then fallback tiers, for the given distance
 function preferredTiers(distanceKm: number): AircraftTier[] {
   if (distanceKm < 1_500)  return ['regional', 'narrowbody'];
@@ -41,25 +77,34 @@ function preferredTiers(distanceKm: number): AircraftTier[] {
   return ['widebody', 'narrowbody'];
 }
 
-function pickAircraft(entry: AirlineEntry, distanceKm: number): string {
+export function pickAircraftFor(aircraft: string[], distanceKm: number): string {
   const tiers = preferredTiers(distanceKm);
   for (const tier of tiers) {
-    const candidates = entry.aircraft.filter(a => AIRCRAFT_TIER[a] === tier);
+    const candidates = aircraft.filter(a => AIRCRAFT_TIER[a] === tier);
     if (candidates.length > 0) return pick(candidates);
   }
-  // No tier match — use any aircraft this airline operates from this airport
-  return pick(entry.aircraft);
+  return pick(aircraft);
 }
 
-export function generateFlightInfo(departureIata: string, distanceKm: number): FlightInfo {
-  const airlinePool = airlinesByAirport[departureIata]?.length
-    ? airlinesByAirport[departureIata]
-    : FALLBACK_AIRLINES;
+/** Pick a real carrier + aircraft for a leg: route data first, then airport-level, then fallback */
+export function pickCarrier(departureIata: string, destinationIata: string, distanceKm: number): {
+  airline: string;
+  code: string;
+  aircraft: string;
+} {
+  const pool = getCarriersForRoute(departureIata, destinationIata);
+  const carriers = pool.length ? pool : getCarriersAtAirport(departureIata);
+  const carrier = carriers.length ? pick(carriers) : pick(FALLBACK_AIRLINES);
+  return {
+    airline: carrier.name,
+    code: carrier.code,
+    aircraft: pickAircraftFor(carrier.aircraft, distanceKm),
+  };
+}
 
-  const airline = pick(airlinePool);
-  const aircraft = pickAircraft(airline, distanceKm);
+/** Random seat/gate/passenger details around a known airline + aircraft */
+export function buildFlightInfo(airline: string, code: string, aircraft: string, flightNumber?: string): FlightInfo {
   const seatClass = pick(SEAT_CLASSES);
-  const flightNumber = `${airline.code}${randInt(1000, 9999)}`;
 
   let seat: string;
   if (seatClass === 'Business') {
@@ -70,18 +115,19 @@ export function generateFlightInfo(departureIata: string, distanceKm: number): F
     seat = `${pick(SEAT_ROWS_ECONOMY)}${pick(SEAT_LETTERS_ECONOMY)}`;
   }
 
-  const gate = `${pick(GATES)}${randInt(1, 32)}`;
-  const terminal = pick(TERMINALS);
-  const passengerName = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
-
   return {
-    airline: airline.name,
-    flightNumber,
+    airline,
+    flightNumber: flightNumber ?? `${code}${randInt(1000, 9999)}`,
     aircraft,
     seat,
-    gate,
+    gate: `${pick(GATES)}${randInt(1, 32)}`,
     seatClass,
-    passengerName,
-    terminal,
+    passengerName: `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`,
+    terminal: pick(TERMINALS),
   };
+}
+
+export function generateFlightInfo(departureIata: string, destinationIata: string, distanceKm: number): FlightInfo {
+  const { airline, code, aircraft } = pickCarrier(departureIata, destinationIata, distanceKm);
+  return buildFlightInfo(airline, code, aircraft);
 }

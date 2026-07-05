@@ -1,6 +1,6 @@
 import { Airport, airports } from '../data/airports';
 
-const CRUISING_SPEED_KMH = 885; // ~550 mph
+export const CRUISING_SPEED_KMH = 885; // ~550 mph
 
 function toRad(deg: number): number {
   return (deg * Math.PI) / 180;
@@ -135,13 +135,19 @@ function pickDiverse(
       c => c.bearing >= sector.min && c.bearing < sector.max && !usedIatas.has(c.airport.iata)
     );
     if (inSector.length > 0) {
-      picks.push(inSector[0].airport);
-      usedIatas.add(inSector[0].airport.iata);
+      // Prefer the best-distance large airport in the sector; fall back to medium
+      const pick = inSector.find(c => c.airport.size === 'large') ?? inSector[0];
+      picks.push(pick.airport);
+      usedIatas.add(pick.airport.iata);
     }
   }
 
-  // If we didn't fill all 3 sectors, fill from remaining candidates
-  for (const c of candidates) {
+  // If we didn't fill all 3 sectors, fill from remaining candidates (large first)
+  const ordered = [
+    ...candidates.filter(c => c.airport.size === 'large'),
+    ...candidates.filter(c => c.airport.size === 'medium'),
+  ];
+  for (const c of ordered) {
     if (picks.length >= 3) break;
     if (!usedIatas.has(c.airport.iata)) {
       picks.push(c.airport);

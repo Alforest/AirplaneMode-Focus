@@ -2,7 +2,8 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useFlightStore } from './store/flightStore';
 import Hero from './components/landing/Hero';
-import BoardingPassSelection from './components/boarding/BoardingPassSelection';
+import DeparturesBoard from './components/departures/DeparturesBoard';
+import BoardingConfirm from './components/boarding/BoardingConfirm';
 import TrackerPage from './components/tracker/TrackerPage';
 import LandedScreen from './components/shared/LandedScreen';
 import DevToolbar from './components/shared/DevToolbar';
@@ -32,6 +33,19 @@ const App: React.FC = () => {
           </motion.div>
         )}
 
+        {phase === 'departures' && (
+          <motion.div
+            key="departures"
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.4 }}
+          >
+            <DeparturesBoard />
+          </motion.div>
+        )}
+
         {phase === 'boarding' && (
           <motion.div
             key="boarding"
@@ -41,7 +55,7 @@ const App: React.FC = () => {
             exit="exit"
             transition={{ duration: 0.4 }}
           >
-            <BoardingPassSelection />
+            <BoardingConfirm />
           </motion.div>
         )}
 

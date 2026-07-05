@@ -11,7 +11,24 @@
       "Bash(gtimeout 90 npx vite build)",
       "Bash(node -e \":*)",
       "Bash(echo \"Exit: $?\")",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh run:*)",
+      "Bash(npm run:*)",
+      "WebSearch",
+      "WebFetch(domain:openflights.org)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.travelmiles101.com)",
+      "WebFetch(domain:upgradedpoints.com)",
+      "WebFetch(domain:ourairports.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(sed \"s/''''$//\")",
+      "Bash(sed 's/,$//')",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat\" -o scripts/data/routes.dat)",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat\" -o scripts/data/airlines.dat)",
+      "Bash(npx tsx:*)"
     ]
   }
 }

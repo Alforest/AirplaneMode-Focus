@@ -30,6 +30,7 @@ jobs:
       - run: npm run build
         env:
           VITE_MAPBOX_ACCESS_TOKEN: ${{ secrets.VITE_MAPBOX_ACCESS_TOKEN }}
+          VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

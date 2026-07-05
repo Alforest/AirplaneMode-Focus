@@ -1,6 +1,6 @@
-# AirplaneMode Focus
+# FocusFlight
 
-A gamified study timer where your study session becomes a flight. Enter how long you want to study, pick a destination from a split-flap departure board, then track your "flight" on a live globe — animated plane, countdown timer, simulated altitude and speed, and a celebration screen when you land.
+A gamified study timer where your study session becomes a flight. Enter your departure airport, pick a real flight from its split-flap departure board — the flight's duration is your study duration — then track your "flight" on a live globe: animated plane, countdown timer, simulated altitude and speed, and a celebration screen when you land.
 
 Your completed flights are saved locally and shown on a rotating globe with glowing arc routes.
 
@@ -8,8 +8,9 @@ Your completed flights are saved locally and shown on a rotating globe with glow
 
 ## Features
 
-- **Split-flap departure board** — browse suggested routes by study duration, click any flight to depart
-- **Boarding pass selection** — three destination passes generated based on your study time and departure airport
+- **Real routes** — ~33,000 nonstop routes from OpenFlights: every destination on your board is really served from that airport, by the airline and aircraft that actually fly it
+- **Split-flap departure board** — every real flight from your airport, sorted by duration with filter chips; the flight you pick sets your study session length
+- **Boarding pass** — confirm your flight on a physical-style pass with real airline, aircraft, seat and gate
 - **Live flight tracker** — Mapbox dark map (or satellite) with an animated plane following a great-circle route
 - **Simulated flight stats** — altitude, speed, and distance remaining on a parabolic curve
 - **Flight history globe** — all your past routes drawn as glowing arcs on a rotating globe
