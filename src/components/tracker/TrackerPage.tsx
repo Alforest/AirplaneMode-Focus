@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import MapView from './MapView';
 import StudyTimer from './StudyTimer';
 import FlightStats from './FlightStats';
+import AdSlot from './AdSlot';
 import { useFlightStore } from '../../store/flightStore';
 
 const SplitFlapText: React.FC<{ text: string }> = ({ text }) => (
@@ -156,7 +157,7 @@ const TrackerPage: React.FC = () => {
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
-          className="w-full md:w-72 flex flex-col gap-4 p-4 border-t md:border-t-0 md:border-l border-gold/10 bg-midnight/40 shrink-0"
+          className="w-full md:w-72 flex flex-col gap-4 p-4 border-t md:border-t-0 md:border-l border-gold/10 bg-midnight/40 shrink-0 md:overflow-y-auto"
         >
           {/* Route header */}
           <div className="text-center pt-2">
@@ -183,6 +184,8 @@ const TrackerPage: React.FC = () => {
               Phones on airplane mode means fewer interruptions. Stay focused — you're almost there.
             </div>
           </div>
+
+          <AdSlot />
 
           {/* Footer */}
           <div className="text-center pb-2 mt-auto">

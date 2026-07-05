@@ -2,10 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { initAnalytics, track } from './lib/analytics';
+import { initAds } from './lib/ads';
 import { useFlightStore } from './store/flightStore';
 import './index.css';
 
 initAnalytics();
+initAds();
 
 // Closing the tab mid-flight is an abandonment too (posthog flushes via
 // sendBeacon on pagehide). Registered here, not in analytics.ts, to keep

@@ -6,8 +6,8 @@ const SCRAMBLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 // FlipChar — scrambles on char change OR external trigger (hover)
 // ---------------------------------------------------------------------------
 
-const FlipChar: React.FC<{ char: string; idx: number; trigger?: number }> = ({
-  char, idx, trigger = 0,
+const FlipChar: React.FC<{ char: string; idx: number; trigger?: number; small?: boolean }> = ({
+  char, idx, trigger = 0, small = false,
 }) => {
   const [shown, setShown] = useState(char);
   const prevChar = useRef(char);
@@ -46,19 +46,19 @@ const FlipChar: React.FC<{ char: string; idx: number; trigger?: number }> = ({
     return () => { clearTimeout(t1.current); clearInterval(t2.current); };
   }, [trigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (char === ' ') return <span style={{ display: 'inline-block', width: '0.6rem' }} />;
+  if (char === ' ') return <span style={{ display: 'inline-block', width: small ? '0.45rem' : '0.6rem' }} />;
 
   return (
     <span style={{
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: '1.2rem',
-      height: '1.75rem',
+      width: small ? '1.02rem' : '1.2rem',
+      height: small ? '1.5rem' : '1.75rem',
       background: '#07090e',
       borderRadius: '2px',
       fontFamily: "'JetBrains Mono', monospace",
-      fontSize: '0.8rem',
+      fontSize: small ? '0.68rem' : '0.8rem',
       fontWeight: 700,
       color: '#f2c84b',
       position: 'relative',
@@ -82,10 +82,10 @@ const FlipChar: React.FC<{ char: string; idx: number; trigger?: number }> = ({
 // FlipText
 // ---------------------------------------------------------------------------
 
-const FlipText: React.FC<{ text: string; trigger?: number }> = ({ text, trigger }) => (
+const FlipText: React.FC<{ text: string; trigger?: number; small?: boolean }> = ({ text, trigger, small }) => (
   <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'nowrap' }}>
     {text.split('').map((ch, i) => (
-      <FlipChar key={i} char={ch} idx={i} trigger={trigger} />
+      <FlipChar key={i} char={ch} idx={i} trigger={trigger} small={small} />
     ))}
   </span>
 );
@@ -121,8 +121,8 @@ function paginate(text: string, width: number): string[] {
 
 const PAGE_INTERVAL_MS = 2400;
 
-export const PagedFlipText: React.FC<{ text: string; width?: number; trigger?: number }> = ({
-  text, width = 11, trigger,
+export const PagedFlipText: React.FC<{ text: string; width?: number; trigger?: number; small?: boolean }> = ({
+  text, width = 11, trigger, small,
 }) => {
   const pages = useMemo(() => paginate(text, width), [text, width]);
   const [page, setPage] = useState(0);
@@ -134,7 +134,7 @@ export const PagedFlipText: React.FC<{ text: string; width?: number; trigger?: n
     return () => clearInterval(id);
   }, [pages]);
 
-  return <FlipText text={pages[Math.min(page, pages.length - 1)]} trigger={trigger} />;
+  return <FlipText text={pages[Math.min(page, pages.length - 1)]} trigger={trigger} small={small} />;
 };
 
 export default FlipText;

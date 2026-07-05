@@ -56,14 +56,26 @@ Get a free token at mapbox.com (50k map loads/month free tier).
 
 ---
 
+## Ads (Google AdSense)
+
+`src/lib/ads.ts` is the **only** file that knows about adsbygoogle; `AdSlot.tsx` uses its helpers. Policy: **one** manual 250×250 unit in the tracker sidebar (below the Study Tip card), Auto ads OFF in the AdSense UI, prod builds only — dev and keyless builds are silent no-ops (dev renders a dashed placeholder). EU/UK consent is handled by AdSense "Privacy & messaging" (Google's certified CMP), not by our code. Privacy policy modal: `src/components/shared/PrivacyPolicy.tsx`, opened from the landing footer in `HowItWorks.tsx`.
+
+- Env: `VITE_ADSENSE_CLIENT` (ca-pub-…) loads the script; `VITE_ADSENSE_SLOT` renders the unit. Both are public IDs, set as GitHub Actions secrets for deploy.
+- **StrictMode gotcha**: `adsbygoogle.push({})` twice on one `<ins>` throws — AdSlot guards with a `useRef` flag (same pattern as the Mapbox init guard).
+- No-fill (`data-ad-status="unfilled"`) or adblock → the whole card collapses; never leave an empty box mid-flight.
+- `ads.txt` can NOT live in this repo (it must be at the domain root): it lives in the separate `Alforest/alforest.github.io` repo, which also redirects `/` → `/AirplaneMode-Focus/`.
+
+---
+
 ## File Structure
 
 ```
 src/
   components/
     landing/
-      Hero.tsx                    # Full-screen hero with animated clouds + swooping plane
-      InputForm.tsx               # Airport code + duration inputs with validation
+      Hero.tsx                    # Terminal split-view hero: lockup+clock bar, headline, check-in, live board
+      InputForm.tsx               # Split-flap IATA check-in (3 flip cells over a hidden input)
+      HowItWorks.tsx              # Below-the-fold: 4-step explainer, FAQ, footer w/ privacy link
     boarding/
       BoardingPassCard.tsx        # Single boarding pass component (physical pass design)
       BoardingPassSelection.tsx   # 3-pass selection screen with flip animations
@@ -73,9 +85,14 @@ src/
       StudyTimer.tsx              # HH:MM:SS countdown + circular SVG progress ring
       FlightStats.tsx             # Altitude, speed, distance remaining (parabolic sim)
       AmbientSound.tsx            # Cabin ambient audio toggle button
+      AdSlot.tsx                  # The single AdSense unit (250×250, sidebar only)
     shared/
       LandedScreen.tsx            # Full-screen celebration when timer hits 0
       CloudBackground.tsx         # Reusable animated cloud layer
+      PrivacyPolicy.tsx           # Privacy modal (AdSense requirement)
+  lib/
+    analytics.ts                  # PostHog wrapper — only file importing posthog-js
+    ads.ts                        # AdSense wrapper — only file touching adsbygoogle
   data/
     airports.ts                   # ~200 major IATA airports with lat/lon
   utils/
@@ -94,7 +111,7 @@ src/
 
 ## Core User Flow
 
-1. **Landing Page** — User enters a 3-letter IATA departure code (e.g. JFK). Animated dark hero with clouds + ambient "now boarding worldwide" board of real flights from major hubs (clickable).
+1. **Landing Page** — "Terminal split view" hero: top bar with airline lockup + live clock, headline and a split-flap IATA check-in (three flip cells backed by a hidden input) on the left, and the live "now boarding worldwide" board of real flights (clickable, boards directly) on the right. Flight log below the fold.
 2. **Departures Board** — Split-flap board of every real nonstop route from that airport (OpenFlights data), sorted by flight duration, with duration filter chips. The flight you click sets your study duration.
 3. **Boarding Pass Confirm** — Single boarding pass for the chosen flight (real airline + aircraft for that route). Physical pass design with perforated edge, barcode.
 4. **Flight Tracker** — Mapbox dark map, animated plane along great-circle arc, countdown, simulated altitude/speed stats, ambient sound toggle.
