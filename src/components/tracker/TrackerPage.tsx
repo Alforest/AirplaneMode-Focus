@@ -5,6 +5,34 @@ import StudyTimer from './StudyTimer';
 import FlightStats from './FlightStats';
 import AdSlot from './AdSlot';
 import { useFlightStore } from '../../store/flightStore';
+import { useFlightProgress, getFlightStatus } from '../../hooks/useFlightProgress';
+
+// Floating countdown over the map — phones only, where the full timer panel
+// lives below the fold
+const MobileTimerChip: React.FC = () => {
+  const { progress, remainingSeconds } = useFlightProgress();
+  const status = getFlightStatus(progress);
+
+  const h = Math.floor(remainingSeconds / 3600);
+  const m = Math.floor((remainingSeconds % 3600) / 60);
+  const s = remainingSeconds % 60;
+  const countdown = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+  return (
+    <div className="md:hidden absolute bottom-5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+      <div className="glass-card rounded-2xl px-5 py-2.5 flex items-center gap-4"
+        style={{ border: '1px solid rgba(240,192,64,0.18)' }}>
+        <span className="font-mono text-gold font-bold text-xl tabular-nums leading-none">
+          {countdown}
+        </span>
+        <span className="w-px h-6 bg-gold/15" />
+        <span className="font-mono text-muted-white/50 text-[0.65rem] tracking-widest uppercase whitespace-nowrap">
+          {status}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 const SplitFlapText: React.FC<{ text: string }> = ({ text }) => (
   <div className="flex items-center justify-center gap-0.5 flex-wrap">
@@ -63,18 +91,18 @@ const TrackerPage: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between px-6 py-4 border-b border-gold/10 shrink-0"
+        className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b border-gold/10 shrink-0"
       >
         {/* Left: flight info */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <div>
             <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest">Flight</div>
-            <div className="font-mono text-gold font-bold text-lg">{flightInfo?.flightNumber}</div>
+            <div className="font-mono text-gold font-bold text-base sm:text-lg">{flightInfo?.flightNumber}</div>
           </div>
-          <div className="w-px h-8 bg-gold/10" />
-          <div>
+          <div className="w-px h-8 bg-gold/10 shrink-0" />
+          <div className="min-w-0">
             <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest">Route</div>
-            <div className="font-mono text-muted-white/70 text-sm">
+            <div className="font-mono text-muted-white/70 text-sm whitespace-nowrap">
               {departure?.iata} → {destination?.iata}
             </div>
           </div>
@@ -89,8 +117,8 @@ const TrackerPage: React.FC = () => {
         </div>
 
         {/* Right: seat */}
-        <div className="flex items-center gap-4">
-          <div className="hidden md:block text-right">
+        <div className="flex items-center gap-4 shrink-0">
+          <div className="text-right">
             <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest">Seat</div>
             <div className="font-mono text-gold font-bold">{flightInfo?.seat}</div>
           </div>
@@ -104,16 +132,18 @@ const TrackerPage: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex-1 relative flex"
-          style={{ minHeight: '50vh' }}
+          className="flex-1 relative flex min-h-[52dvh] md:min-h-[50vh]"
         >
           {/* Map */}
           <div className="absolute inset-2 md:inset-4">
             <MapView targetZoom={targetZoom} />
           </div>
 
+          {/* Countdown floats over the map on phones */}
+          <MobileTimerChip />
+
           {/* Zoom slider — floats over the left edge of the map */}
-          <div className="absolute left-5 md:left-7 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-0">
+          <div className="absolute left-4 md:left-7 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-0">
             <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest mb-3 -rotate-90 whitespace-nowrap"
               style={{ writingMode: 'initial' }}>
             </div>
@@ -132,7 +162,7 @@ const TrackerPage: React.FC = () => {
                     key={level.zoom}
                     onClick={() => setZoomIdx(actualIdx)}
                     title={level.label}
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                    className={`w-8 h-8 md:w-7 md:h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
                       isActive
                         ? 'bg-gold text-navy'
                         : 'text-muted-white/30 hover:text-gold hover:bg-gold/10'
@@ -157,7 +187,7 @@ const TrackerPage: React.FC = () => {
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
-          className="w-full md:w-72 flex flex-col gap-4 p-4 border-t md:border-t-0 md:border-l border-gold/10 bg-midnight/40 shrink-0 md:overflow-y-auto"
+          className="w-full md:w-72 flex flex-col gap-4 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t md:border-t-0 md:border-l border-gold/10 bg-midnight/40 shrink-0 md:overflow-y-auto"
         >
           {/* Route header */}
           <div className="text-center pt-2">

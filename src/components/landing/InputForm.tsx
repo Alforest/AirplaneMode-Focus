@@ -70,7 +70,9 @@ const InputForm: React.FC = () => {
         Departing from
       </label>
 
-      <div className="flex items-stretch gap-4">
+      {/* Stacks on phones (cells row, then full-width button); single row from sm up */}
+      <div className="flex flex-col sm:flex-row sm:items-stretch gap-4">
+        <div className="flex items-stretch gap-4">
         {/* Flip cells + hidden input — the whole padded group is clickable */}
         <div
           className="relative flex gap-2 cursor-text"
@@ -90,6 +92,7 @@ const InputForm: React.FC = () => {
             spellCheck={false}
             aria-label="Departure airport IATA code"
             className="absolute inset-0 w-full h-full opacity-0 cursor-text"
+            style={{ fontSize: 16 }} // ≥16px stops iOS Safari zooming in on focus
           />
           {CELLS.map(i => {
             const ch = value[i] ?? '';
@@ -180,15 +183,16 @@ const InputForm: React.FC = () => {
             </motion.button>
           )}
         </AnimatePresence>
+        </div>
 
-        {/* Submit */}
+        {/* Submit — full-width tap target on phones, inline from sm up */}
         <motion.button
           type="submit"
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           className="bg-gold hover:bg-amber text-navy font-mono font-bold
-          px-6 rounded-lg tracking-widest uppercase transition-colors duration-200
-          flex items-center gap-2.5"
+          px-6 py-3.5 sm:py-0 rounded-lg tracking-widest uppercase transition-colors duration-200
+          flex items-center justify-center gap-2.5 w-full sm:w-auto"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>

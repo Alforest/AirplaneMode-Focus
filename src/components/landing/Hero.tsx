@@ -74,7 +74,7 @@ const Hero: React.FC = () => {
         initial={{ opacity: 0, y: -14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.15 }}
-        className="relative z-10 w-full max-w-6xl mx-auto px-6 pt-7 flex items-center justify-between"
+        className="relative z-10 w-full max-w-6xl mx-auto px-5 sm:px-6 pt-6 sm:pt-7 flex items-center justify-between"
       >
         <div className="flex items-center gap-2.5">
           <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
@@ -96,8 +96,8 @@ const Hero: React.FC = () => {
       </motion.header>
 
       {/* Main split */}
-      <div className="relative z-10 flex-1 flex items-center w-full max-w-6xl mx-auto px-6 py-12">
-        <div className="grid lg:grid-cols-[10fr_11fr] gap-12 lg:gap-14 items-center w-full">
+      <div className="relative z-10 flex-1 flex items-center w-full max-w-6xl mx-auto px-5 sm:px-6 py-10 pb-20 lg:py-12">
+        <div className="grid lg:grid-cols-[10fr_11fr] gap-10 lg:gap-14 items-center w-full">
 
           {/* Left — headline + check-in */}
           <div>
@@ -105,7 +105,7 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="font-serif text-4xl md:text-5xl text-muted-white leading-[1.15] mb-5"
+              className="font-serif text-[2.1rem] sm:text-4xl md:text-5xl text-muted-white leading-[1.15] mb-5"
             >
               Your study session becomes <span className="text-gold">a flight.</span>
             </motion.h1>
@@ -114,7 +114,7 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.45 }}
-              className="text-muted-white/50 text-lg mb-10 font-sans font-light tracking-wide"
+              className="text-muted-white/50 text-base sm:text-lg mb-8 sm:mb-10 font-sans font-light tracking-wide"
             >
               Phone on airplane mode. Pick a real flight —
               land when the work is done.

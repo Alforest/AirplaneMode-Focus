@@ -16,6 +16,11 @@
   --muted-white: #d0d8e8;
 }
 
+html {
+  /* Prevent iOS Safari from inflating text after orientation changes */
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background-color: var(--navy);
   color: var(--muted-white);
@@ -23,6 +28,12 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Kill the grey tap flash on iOS/Android — all interactive rows/buttons have
+   their own hover/active styling */
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ─── Glassmorphism card ───────────────────────────────────────────────── */

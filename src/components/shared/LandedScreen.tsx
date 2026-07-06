@@ -65,7 +65,7 @@ const LandedScreen: React.FC = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="fixed inset-0 bg-navy z-50 flex items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 bg-navy z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden">
       {/* Confetti */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {particles.current.map(p => (
@@ -77,7 +77,7 @@ const LandedScreen: React.FC = () => {
       <div className="stars-container absolute inset-0 opacity-60" />
 
       {/* Content */}
-      <div className="relative z-10 text-center max-w-xl mx-auto px-6">
+      <div className="relative z-10 text-center max-w-xl mx-auto px-5 sm:px-6 py-10 my-auto">
         {/* Plane icon */}
         <motion.div
           initial={{ scale: 0, rotate: -45 }}
@@ -102,10 +102,10 @@ const LandedScreen: React.FC = () => {
           <div className="font-mono text-gold/60 text-xs uppercase tracking-widest mb-2">
             You've arrived
           </div>
-          <h1 className="font-serif text-5xl md:text-6xl text-muted-white mb-1">
+          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl text-muted-white mb-1">
             Welcome to
           </h1>
-          <h2 className="font-serif text-5xl md:text-6xl text-gold">
+          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-gold break-words">
             {destination?.city ?? 'Your Destination'}
           </h2>
           <p className="font-sans text-muted-white/40 text-lg mt-2">
@@ -118,17 +118,17 @@ const LandedScreen: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="glass-card rounded-2xl px-8 py-6 mt-8 grid grid-cols-3 gap-6"
+          className="glass-card rounded-2xl px-4 sm:px-8 py-6 mt-8 grid grid-cols-3 gap-2 sm:gap-6"
         >
           <div className="text-center">
             <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest mb-1">Studied</div>
-            <div className="font-mono text-gold text-xl font-bold">
+            <div className="font-mono text-gold text-lg sm:text-xl font-bold">
               {formatDuration(durationMinutes)}
             </div>
           </div>
           <div className="text-center border-x border-gold/10">
             <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest mb-1">Distance</div>
-            <div className="font-mono text-gold text-xl font-bold">
+            <div className="font-mono text-gold text-lg sm:text-xl font-bold">
               {totalDistKm.toLocaleString()}
               <span className="text-gold/50 text-xs ml-1">km</span>
             </div>

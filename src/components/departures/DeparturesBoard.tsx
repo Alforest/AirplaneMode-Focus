@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useFlightStore } from '../../store/flightStore';
 import { getFlightsFrom, BoardFlight } from '../../utils/departureBoard';
 import FlipText, { PagedFlipText } from '../shared/FlipText';
+import { useIsPhone, useMediaQuery } from '../../hooks/useMediaQuery';
 
 const FILTERS = [
   { label: 'ALL',    min: 0,   max: Infinity },
@@ -34,10 +35,12 @@ const COL_LABEL: React.CSSProperties = {
 interface RowProps {
   flight: BoardFlight;
   isLast: boolean;
+  isPhone: boolean;
+  isTiny: boolean;
   onSelect: (flight: BoardFlight) => void;
 }
 
-const FlightRow: React.FC<RowProps> = ({ flight, isLast, onSelect }) => {
+const FlightRow: React.FC<RowProps> = ({ flight, isLast, isPhone, isTiny, onSelect }) => {
   const [hovered, setHovered] = useState(false);
   const [trigger, setTrigger] = useState(0);
 
@@ -57,8 +60,8 @@ const FlightRow: React.FC<RowProps> = ({ flight, isLast, onSelect }) => {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '1rem',
-        padding: '0.7rem 1.25rem',
+        gap: isTiny ? '0.5rem' : isPhone ? '0.75rem' : '1rem',
+        padding: isTiny ? '0.8rem 0.6rem' : isPhone ? '0.8rem 0.85rem' : '0.7rem 1.25rem',
         borderBottom: isLast ? 'none' : '1px solid rgba(240,192,64,0.05)',
         cursor: 'pointer',
         background: hovered ? 'rgba(240,192,64,0.05)' : 'transparent',
@@ -66,21 +69,28 @@ const FlightRow: React.FC<RowProps> = ({ flight, isLast, onSelect }) => {
         outline: 'none',
       }}
     >
-      {/* Flight code */}
-      <span style={{
-        width: '5rem',
-        fontFamily: "'JetBrains Mono',monospace",
-        fontSize: '0.75rem',
-        color: hovered ? 'rgba(240,192,64,0.6)' : 'rgba(208,216,232,0.3)',
-        flexShrink: 0,
-        transition: 'color 0.15s ease',
-      }}>
-        {flight.flightNumber}
-      </span>
+      {/* Flight code — desktop only; destination + duration is what matters on a phone */}
+      {!isPhone && (
+        <span style={{
+          width: '5rem',
+          fontFamily: "'JetBrains Mono',monospace",
+          fontSize: '0.75rem',
+          color: hovered ? 'rgba(240,192,64,0.6)' : 'rgba(208,216,232,0.3)',
+          flexShrink: 0,
+          transition: 'color 0.15s ease',
+        }}>
+          {flight.flightNumber}
+        </span>
+      )}
 
       {/* Destination city */}
       <div style={{ flex: 1.2, overflow: 'hidden', minWidth: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-        <PagedFlipText text={boardCity(flight.destination.city)} trigger={trigger} />
+        <PagedFlipText
+          text={boardCity(flight.destination.city)}
+          width={isTiny ? 7 : isPhone ? 9 : 11}
+          trigger={trigger}
+          small={isPhone}
+        />
         <span style={{
           fontFamily: "'JetBrains Mono',monospace",
           fontSize: '0.68rem',
@@ -119,8 +129,8 @@ const FlightRow: React.FC<RowProps> = ({ flight, isLast, onSelect }) => {
       </span>
 
       {/* Duration */}
-      <div style={{ width: '8.5rem', flexShrink: 0, overflow: 'hidden' }}>
-        <FlipText text={fmtDuration(flight.durationMinutes)} trigger={trigger} />
+      <div style={{ width: isPhone ? '8rem' : '8.5rem', flexShrink: 0, overflow: 'hidden' }}>
+        <FlipText text={fmtDuration(flight.durationMinutes)} trigger={trigger} small={isPhone} />
       </div>
 
       {/* Status / CTA */}
@@ -159,6 +169,8 @@ const FlightRow: React.FC<RowProps> = ({ flight, isLast, onSelect }) => {
 
 const DeparturesBoard: React.FC = () => {
   const { departure, selectFlight, setPhase } = useFlightStore();
+  const isPhone = useIsPhone();
+  const isTiny = useMediaQuery('(max-width: 359px)');
 
   const [filterIdx, setFilterIdx] = useState(0);
   const [colon, setColon] = useState(true);
@@ -193,14 +205,14 @@ const DeparturesBoard: React.FC = () => {
   if (!departure) return null;
 
   return (
-    <div style={{ background: '#06080f' }} className="min-h-screen py-14 px-4">
+    <div style={{ background: '#06080f' }} className="min-h-screen py-7 sm:py-14 px-3 sm:px-4">
       <div style={{ maxWidth: 960 }} className="mx-auto">
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-2">
           <button
             onClick={() => setPhase('landing')}
-            className="text-muted-white/30 hover:text-muted-white/60 font-mono text-sm tracking-wider transition-colors"
+            className="text-muted-white/30 hover:text-muted-white/60 font-mono text-sm tracking-wider transition-colors py-2 -my-2"
           >
             ← Back
           </button>
@@ -241,7 +253,7 @@ const DeparturesBoard: React.FC = () => {
                 background: 'transparent', color: 'rgba(208,216,232,0.35)',
                 border: '1px solid rgba(240,192,64,0.12)',
               }}
-              className="px-4 py-1.5 rounded-lg font-mono text-xs tracking-widest uppercase transition-all duration-200 hover:border-gold/30"
+              className="px-3.5 sm:px-4 py-2 sm:py-1.5 rounded-lg font-mono text-xs tracking-widest uppercase transition-all duration-200 hover:border-gold/30"
             >
               {f.label}
             </button>
@@ -259,16 +271,16 @@ const DeparturesBoard: React.FC = () => {
           <div style={{
             background: '#080b14',
             borderBottom: '1px solid rgba(240,192,64,0.08)',
-            padding: '0.5rem 1.25rem',
+            padding: isTiny ? '0.5rem 0.6rem' : isPhone ? '0.5rem 0.85rem' : '0.5rem 1.25rem',
             display: 'flex',
-            gap: '1rem',
+            gap: isTiny ? '0.5rem' : isPhone ? '0.75rem' : '1rem',
             alignItems: 'center',
           }}>
-            <span style={{ ...COL_LABEL, width: '5rem', flexShrink: 0 }}>Flight</span>
+            {!isPhone && <span style={{ ...COL_LABEL, width: '5rem', flexShrink: 0 }}>Flight</span>}
             <span style={{ ...COL_LABEL, flex: 1.2 }}>Destination</span>
             <span style={{ ...COL_LABEL, flex: 1 }} className="hidden md:block">Airline</span>
             <span style={{ ...COL_LABEL, width: '9rem', flexShrink: 0 }} className="hidden lg:block">Aircraft</span>
-            <span style={{ ...COL_LABEL, width: '8.5rem', flexShrink: 0 }}>Duration</span>
+            <span style={{ ...COL_LABEL, width: isPhone ? '8rem' : '8.5rem', flexShrink: 0 }}>Duration</span>
             <span style={{ ...COL_LABEL, width: '5.5rem', flexShrink: 0 }} className="hidden sm:block">Status</span>
           </div>
 
@@ -284,6 +296,8 @@ const DeparturesBoard: React.FC = () => {
                   key={`${flight.destination.iata}-${flight.flightNumber}`}
                   flight={flight}
                   isLast={i === visible.length - 1}
+                  isPhone={isPhone}
+                  isTiny={isTiny}
                   onSelect={f => selectFlight(departure, f)}
                 />
               ))

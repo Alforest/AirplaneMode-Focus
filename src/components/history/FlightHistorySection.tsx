@@ -46,7 +46,7 @@ const FlightHistorySection: React.FC = () => {
         {/* Globe + Stats row */}
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           {/* Globe */}
-          <div className="flex-1 md:basis-[58%]" style={{ height: 480 }}>
+          <div className="flex-1 md:basis-[58%] h-[340px] md:h-[480px]">
             <FlightGlobe flights={flights} />
           </div>
 

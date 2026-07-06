@@ -65,12 +65,33 @@ const BoardingConfirm: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Hint */}
+        {/* Mobile CTA — the pass's hover overlay never shows on touch screens */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="sm:hidden max-w-md mx-auto mt-6 px-1"
+        >
+          <button
+            onClick={handleBoard}
+            disabled={boarding}
+            className="w-full bg-gold active:bg-amber text-navy font-mono font-bold
+            py-4 rounded-xl tracking-widest uppercase text-sm transition-colors duration-200
+            disabled:opacity-70 flex items-center justify-center gap-2.5"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+            </svg>
+            {boarding ? 'Boarding…' : 'Board This Flight'}
+          </button>
+        </motion.div>
+
+        {/* Hint — desktop, where the pass itself is the click target */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="text-center text-muted-white/20 font-mono text-xs mt-8 tracking-widest uppercase"
+          className="hidden sm:block text-center text-muted-white/20 font-mono text-xs mt-8 tracking-widest uppercase"
         >
           Click your boarding pass to begin the flight
         </motion.p>
