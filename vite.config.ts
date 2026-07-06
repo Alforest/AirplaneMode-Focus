@@ -3,7 +3,9 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/AirplaneMode-Focus/',
+  // Relative base works at BOTH alforest.github.io/AirplaneMode-Focus/ and
+  // focusflight.io — the site keeps working while DNS/custom-domain is set up
+  base: './',
   optimizeDeps: {
     include: ['framer-motion'],
   },

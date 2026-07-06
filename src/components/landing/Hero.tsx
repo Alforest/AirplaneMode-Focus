@@ -84,7 +84,7 @@ const Hero: React.FC = () => {
             />
           </svg>
           <span className="font-serif text-2xl text-muted-white leading-none">
-            Focus<span className="text-gold">Flight</span>
+            Focus<span className="text-gold">Flight</span><span className="text-muted-white/35">.io</span>
           </span>
         </div>
         <div className="flex items-center gap-4">

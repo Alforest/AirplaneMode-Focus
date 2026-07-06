@@ -118,10 +118,10 @@ const PrivacyPolicy: React.FC<Props> = ({ open, onClose }) => (
           <P>
             Questions? Reach out at{' '}
             <a
-              href="mailto:alforest22@gmail.com"
+              href="mailto:admin@focusflight.io"
               className="text-gold/80 hover:text-gold underline decoration-gold/30"
             >
-              alforest22@gmail.com
+              admin@focusflight.io
             </a>.
           </P>
         </motion.div>
