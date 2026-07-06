@@ -174,14 +174,15 @@ src/
 ## Simulated Flight Phases & Stats
 
 `src/utils/flightPhases.ts` is the single source of truth: session progress (0–1,
-timer-driven) is remapped onto the arc so the plane is parked while boarding,
-creeps ~2.5 km at ground zoom (13.2) while taxiing, flies the arc, then rolls
-out ~2 km after touchdown. Ground phases are percentage-based but time-capped
-(boarding ≤45 s, taxi ≤150 s, rollout ≤90 s) so long-hauls don't taxi forever.
-`MapView` holds the camera at `GROUND_ZOOM` during ground phases — the zoom-out
-to the user's chosen level *is* the takeoff moment.
+timer-driven) is remapped onto the arc so the plane taxis from the very first
+second (~1.8 km creep at ground zoom 13.2 — there is deliberately NO parked
+"boarding" phase; a stationary plane reads as a bug), flies the arc, then rolls
+out ~1.5 km after touchdown. Ground phases are percentage-based but time-capped
+(taxi ≤150 s, rollout ≤90 s) so long-hauls don't taxi forever. `MapView` holds
+the camera at `GROUND_ZOOM` during ground phases — the zoom-out to the user's
+chosen level *is* the takeoff moment.
 
-**Status:** Boarding → Taxiing → Ascending (first 15% of air segment) →
+**Status:** Taxiing → Ascending (first 15% of air segment) →
 Cruising → Descending (last 15%) → Taxiing to gate → Landed!
 
 **Stats (air segment, `ap` = 0–1 within it):**

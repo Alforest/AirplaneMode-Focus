@@ -1,19 +1,19 @@
 // ---------------------------------------------------------------------------
-// flightPhases — ground-phase theater. A flight is: boarding (parked) →
-// taxiing (creep along the first ~2.5 km of the arc at ground zoom) →
-// airborne (the remaining arc) → landing rollout (last ~2 km on the ground).
-// Session progress p (0–1, timer-driven) is remapped onto the arc so the
-// plane behaves like the status label says. Ground phases are percentage-
-// based but time-capped so a 9-hour long-haul doesn't taxi for 40 minutes.
+// flightPhases — ground-phase theater. A flight is: taxiing from the very
+// first second (creep along the first ~1.8 km of the arc at ground zoom) →
+// airborne (the remaining arc) → landing rollout (last ~1.5 km on the ground).
+// There is deliberately NO parked "boarding" phase: a stationary plane reads
+// as a bug. Session progress p (0–1, timer-driven) is remapped onto the arc
+// so the plane behaves like the status label says. Ground phases are
+// percentage-based but time-capped so a 9-hour long-haul doesn't taxi for
+// 40 minutes.
 // ---------------------------------------------------------------------------
 
 export interface PhaseTimeline {
-  boardEnd: number;  // p where pushback/taxi starts
   takeoff: number;   // p where wheels leave the ground
   touchdown: number; // p where wheels touch at the destination
 }
 
-const BOARD_CAP_S = 45;
 const TAXI_CAP_S = 150;
 const ROLLOUT_CAP_S = 90;
 
@@ -24,10 +24,9 @@ const ROLLOUT_KM = 1.5; // ground distance after touchdown
 
 export function getTimeline(durationMinutes: number): PhaseTimeline {
   const totalS = durationMinutes * 60;
-  const board = Math.min(0.03 * totalS, BOARD_CAP_S) / totalS;
   const taxi = Math.min(0.05 * totalS, TAXI_CAP_S) / totalS;
   const rollout = Math.min(0.04 * totalS, ROLLOUT_CAP_S) / totalS;
-  return { boardEnd: board, takeoff: board + taxi, touchdown: 1 - rollout };
+  return { takeoff: taxi, touchdown: 1 - rollout };
 }
 
 function groundArcFractions(totalKm: number) {
@@ -40,9 +39,9 @@ function groundArcFractions(totalKm: number) {
 /** Fraction of the great-circle arc traveled at session progress p. */
 export function arcFraction(p: number, tl: PhaseTimeline, totalKm: number): number {
   const g = groundArcFractions(totalKm);
-  if (p <= tl.boardEnd) return 0;
+  if (p <= 0) return 0;
   if (p < tl.takeoff) {
-    return g.taxi * ((p - tl.boardEnd) / (tl.takeoff - tl.boardEnd));
+    return g.taxi * (p / tl.takeoff);
   }
   if (p < tl.touchdown) {
     return g.taxi + (1 - g.taxi - g.rollout) * ((p - tl.takeoff) / (tl.touchdown - tl.takeoff));
@@ -50,14 +49,13 @@ export function arcFraction(p: number, tl: PhaseTimeline, totalKm: number): numb
   return Math.min(1, 1 - g.rollout + g.rollout * ((p - tl.touchdown) / (1 - tl.touchdown)));
 }
 
-/** On the ground (parked, taxiing, or rolling out) → camera stays zoomed in. */
+/** On the ground (taxiing or rolling out) → camera stays zoomed in. */
 export function isOnGround(p: number, tl: PhaseTimeline): boolean {
   return p < tl.takeoff || p >= tl.touchdown;
 }
 
 export function getFlightStatus(p: number, tl: PhaseTimeline): string {
   if (p >= 1) return 'Landed!';
-  if (p < tl.boardEnd) return 'Boarding';
   if (p < tl.takeoff) return 'Taxiing';
   if (p >= tl.touchdown) return 'Taxiing to gate';
   const ap = (p - tl.takeoff) / (tl.touchdown - tl.takeoff);
@@ -69,13 +67,14 @@ export function getFlightStatus(p: number, tl: PhaseTimeline): string {
 export function getSimulatedStats(p: number, tl: PhaseTimeline, totalKm: number) {
   const distRemainingKm = Math.round(totalKm * (1 - arcFraction(p, tl, totalKm)));
 
-  if (p < tl.boardEnd) {
-    return { altitudeFt: 0, speedMph: 0, distRemainingKm };
-  }
   if (p < tl.takeoff) {
-    // taxi speed ramps up and back down before holding short of the runway
-    const tp = (p - tl.boardEnd) / (tl.takeoff - tl.boardEnd);
-    return { altitudeFt: 0, speedMph: Math.round(21 * Math.sin(Math.PI * tp)), distRemainingKm };
+    // taxi speed ramps up quickly, then eases off holding short of the runway
+    const tp = p / tl.takeoff;
+    return {
+      altitudeFt: 0,
+      speedMph: Math.max(Math.round(21 * Math.sin(Math.PI * tp)), 6),
+      distRemainingKm,
+    };
   }
   if (p >= tl.touchdown) {
     // decelerating down the runway, then a slow taxi to the gate
