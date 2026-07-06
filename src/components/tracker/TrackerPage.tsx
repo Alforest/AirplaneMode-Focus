@@ -6,6 +6,7 @@ import FlightStats from './FlightStats';
 import AdSlot from './AdSlot';
 import { useFlightStore } from '../../store/flightStore';
 import { useFlightProgress, getFlightStatus } from '../../hooks/useFlightProgress';
+import { useIsPhone } from '../../hooks/useMediaQuery';
 
 // Floating countdown over the map — phones only, where the full timer panel
 // lives below the fold
@@ -81,7 +82,9 @@ const ZOOM_LEVELS = [
 
 const TrackerPage: React.FC = () => {
   const { departure, destination, flightInfo } = useFlightStore();
+  const isPhone = useIsPhone();
   const [zoomIdx, setZoomIdx] = useState(2); // default: "Country" (zoom 5)
+  const [zoomOpen, setZoomOpen] = useState(false); // phones: slider collapsed by default
 
   const targetZoom = ZOOM_LEVELS[zoomIdx].zoom;
 
@@ -142,43 +145,72 @@ const TrackerPage: React.FC = () => {
           {/* Countdown floats over the map on phones */}
           <MobileTimerChip />
 
-          {/* Zoom slider — floats over the left edge of the map */}
+          {/* Zoom slider — floats over the left edge of the map.
+              On phones it collapses to a single button so it doesn't cover
+              the map or crowd the countdown chip. */}
           <div className="absolute left-4 md:left-7 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-0">
-            <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest mb-3 -rotate-90 whitespace-nowrap"
-              style={{ writingMode: 'initial' }}>
-            </div>
-            <div className="glass-card rounded-2xl px-2 py-3 flex flex-col items-center gap-1"
-              style={{ border: '1px solid rgba(240,192,64,0.12)' }}>
-              {/* Zoom label */}
-              <div className="font-mono text-gold/60 text-xs tracking-widest mb-1">
-                {ZOOM_LEVELS[zoomIdx].label}
-              </div>
-              {/* Steps (top = most zoomed in, bottom = most zoomed out) */}
-              {[...ZOOM_LEVELS].reverse().map((level, reversedIdx) => {
-                const actualIdx = ZOOM_LEVELS.length - 1 - reversedIdx;
-                const isActive = actualIdx === zoomIdx;
-                return (
+            {isPhone && !zoomOpen ? (
+              <button
+                onClick={() => setZoomOpen(true)}
+                aria-label="Open zoom controls"
+                className="glass-card rounded-xl w-11 h-11 flex flex-col items-center justify-center gap-0.5"
+                style={{ border: '1px solid rgba(240,192,64,0.15)' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(240,192,64,0.8)" strokeWidth="2.2" strokeLinecap="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <line x1="16.5" y1="16.5" x2="21" y2="21" />
+                </svg>
+                <span className="font-mono text-gold/60 text-[0.55rem] font-bold leading-none">
+                  {zoomIdx + 1}
+                </span>
+              </button>
+            ) : (
+              <div className="glass-card rounded-2xl px-2 py-3 flex flex-col items-center gap-1"
+                style={{ border: '1px solid rgba(240,192,64,0.12)' }}>
+                {/* Zoom label */}
+                <div className="font-mono text-gold/60 text-xs tracking-widest mb-1">
+                  {ZOOM_LEVELS[zoomIdx].label}
+                </div>
+                {/* Steps (top = most zoomed in, bottom = most zoomed out) */}
+                {[...ZOOM_LEVELS].reverse().map((level, reversedIdx) => {
+                  const actualIdx = ZOOM_LEVELS.length - 1 - reversedIdx;
+                  const isActive = actualIdx === zoomIdx;
+                  return (
+                    <button
+                      key={level.zoom}
+                      onClick={() => {
+                        setZoomIdx(actualIdx);
+                        if (isPhone) setZoomOpen(false); // picked a level → tuck away
+                      }}
+                      title={level.label}
+                      className={`w-8 h-8 md:w-7 md:h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                        isActive
+                          ? 'bg-gold text-navy'
+                          : 'text-muted-white/30 hover:text-gold hover:bg-gold/10'
+                      }`}
+                    >
+                      <span className="font-mono text-xs font-bold">
+                        {ZOOM_LEVELS.length - reversedIdx}
+                      </span>
+                    </button>
+                  );
+                })}
+                {/* Close (phones) / minus label (desktop) */}
+                {isPhone ? (
                   <button
-                    key={level.zoom}
-                    onClick={() => setZoomIdx(actualIdx)}
-                    title={level.label}
-                    className={`w-8 h-8 md:w-7 md:h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                      isActive
-                        ? 'bg-gold text-navy'
-                        : 'text-muted-white/30 hover:text-gold hover:bg-gold/10'
-                    }`}
+                    onClick={() => setZoomOpen(false)}
+                    aria-label="Close zoom controls"
+                    className="mt-1 w-8 h-8 rounded-lg flex items-center justify-center text-muted-white/40 active:text-gold"
                   >
-                    <span className="font-mono text-xs font-bold">
-                      {ZOOM_LEVELS.length - reversedIdx}
-                    </span>
+                    <span className="font-mono text-sm leading-none">✕</span>
                   </button>
-                );
-              })}
-              {/* Plus / minus labels */}
-              <div className="mt-1 flex flex-col items-center gap-0.5">
-                <span className="font-mono text-muted-white/15 text-xs">−</span>
+                ) : (
+                  <div className="mt-1 flex flex-col items-center gap-0.5">
+                    <span className="font-mono text-muted-white/15 text-xs">−</span>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </div>
         </motion.div>
 
