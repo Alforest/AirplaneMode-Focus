@@ -5,14 +5,13 @@ import StudyTimer from './StudyTimer';
 import FlightStats from './FlightStats';
 import AdSlot from './AdSlot';
 import { useFlightStore } from '../../store/flightStore';
-import { useFlightProgress, getFlightStatus } from '../../hooks/useFlightProgress';
+import { useFlightProgress } from '../../hooks/useFlightProgress';
 import { useIsPhone } from '../../hooks/useMediaQuery';
 
 // Floating countdown over the map — phones only, where the full timer panel
 // lives below the fold
 const MobileTimerChip: React.FC = () => {
-  const { progress, remainingSeconds } = useFlightProgress();
-  const status = getFlightStatus(progress);
+  const { remainingSeconds, status } = useFlightProgress();
 
   const h = Math.floor(remainingSeconds / 3600);
   const m = Math.floor((remainingSeconds % 3600) / 60);

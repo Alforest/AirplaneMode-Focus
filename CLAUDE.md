@@ -46,13 +46,19 @@ Get a free token at mapbox.com (50k map loads/month free tier).
 | Event | Fired by | Key props |
 |---|---|---|
 | `$pageview` | posthog init | — |
-| `departures_viewed` | `setDeparture` | airport |
-| `flight_selected` | `selectFlight` | departure, destination, duration_minutes, airline, is_real_route |
-| `flight_started` | `startFlight` | departure, destination, duration_minutes |
-| `flight_completed` | `landFlight` | departure, destination, duration_minutes |
-| `flight_abandoned` | `reset` from tracker / `pagehide` mid-flight | + elapsed_minutes, via |
+| `departures_viewed` | `setDeparture` | airport, airport_city, airport_country |
+| `flight_selected` | `selectFlight` | routeProps + airline, aircraft, is_real_route, source (departures_board \| landing_board) |
+| `flight_started` | `startFlight` | routeProps + airline |
+| `flight_completed` | `landFlight` | routeProps + airline |
+| `flight_abandoned` | `reset` from tracker / `pagehide` mid-flight | routeProps + elapsed_minutes, via |
 
-`flight_started` is the retention anchor event. Deploy needs the `VITE_POSTHOG_KEY` GitHub Actions secret (see `.github/workflows/deploy.yml`).
+`routeProps` (exported from `analytics.ts`) is the shared bag on every flight event:
+departure/destination IATA + city + country, `route` ("JFK-PHL", single-property
+breakdowns), `duration_minutes`, `duration_bucket` (matches the UI filter chips),
+`distance_km`, `haul` (short <1500 km / medium <4000 / long). `flight_started` is
+the retention anchor event. Dev builds log events to the console instead of
+sending. Deploy needs the `VITE_POSTHOG_KEY` GitHub Actions secret (see
+`.github/workflows/deploy.yml`).
 
 ---
 
@@ -165,23 +171,25 @@ src/
 
 ---
 
-## Simulated Flight Stats (parabolic curve)
+## Simulated Flight Phases & Stats
 
-```
-altitude_ft = 35000 × sin(π × progress)
-speed_mph   = 575 × sin(π × progress)
-distRemaining = totalKm × (1 − progress)
-```
+`src/utils/flightPhases.ts` is the single source of truth: session progress (0–1,
+timer-driven) is remapped onto the arc so the plane is parked while boarding,
+creeps ~2.5 km at ground zoom (13.2) while taxiing, flies the arc, then rolls
+out ~2 km after touchdown. Ground phases are percentage-based but time-capped
+(boarding ≤45 s, taxi ≤150 s, rollout ≤90 s) so long-hauls don't taxi forever.
+`MapView` holds the camera at `GROUND_ZOOM` during ground phases — the zoom-out
+to the user's chosen level *is* the takeoff moment.
 
-**Flight status phases:**
-| Progress | Status |
-|---|---|
-| 0–3% | Boarding |
-| 3–8% | Taxiing |
-| 8–20% | Ascending |
-| 20–80% | Cruising |
-| 80–95% | Descending |
-| 95–100% | Landed! |
+**Status:** Boarding → Taxiing → Ascending (first 15% of air segment) →
+Cruising → Descending (last 15%) → Taxiing to gate → Landed!
+
+**Stats (air segment, `ap` = 0–1 within it):**
+```
+altitude_ft = 35000 × sin(π × ap)
+speed_mph   = max(575 × sin(π × ap), 165)   // floor ≈ rotation/approach speed
+distRemaining = totalKm × (1 − arcFraction)  // 0 mph parked, ≤21 mph taxi, decelerating rollout
+```
 
 ---
 

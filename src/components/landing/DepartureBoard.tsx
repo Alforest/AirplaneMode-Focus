@@ -189,7 +189,7 @@ const DepartureBoard: React.FC = () => {
   }, []);
 
   const handleSelect = (row: Row) => {
-    selectFlight(row.fromAirport, row.flight);
+    selectFlight(row.fromAirport, row.flight, 'landing_board');
   };
 
   return (

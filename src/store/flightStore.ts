@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { Airport } from '../data/airports';
 import { FlightInfo, buildFlightInfo } from '../utils/generateFlightInfo';
 import { BoardFlight } from '../utils/departureBoard';
-import { track } from '../lib/analytics';
+import { track, routeProps } from '../lib/analytics';
 
 export type Phase = 'landing' | 'departures' | 'boarding' | 'tracker' | 'landed';
 
@@ -18,8 +18,8 @@ interface FlightState {
 
   setPhase: (phase: Phase) => void;
   setDeparture: (airport: Airport) => void;
-  /** Pick a flight off the departure board → boarding pass confirmation */
-  selectFlight: (departure: Airport, flight: BoardFlight) => void;
+  /** Pick a flight off a departure board → boarding pass confirmation */
+  selectFlight: (departure: Airport, flight: BoardFlight, source?: 'departures_board' | 'landing_board') => void;
   startFlight: () => void;
   landFlight: () => void;
   setSpeedMultiplier: (multiplier: number) => void;
@@ -38,16 +38,20 @@ export const useFlightStore = create<FlightState>((set, get) => ({
 
   setPhase: (phase) => set({ phase }),
   setDeparture: (airport) => {
-    track('departures_viewed', { airport: airport.iata });
+    track('departures_viewed', {
+      airport: airport.iata,
+      airport_city: airport.city,
+      airport_country: airport.country,
+    });
     set({ departure: airport, phase: 'departures' });
   },
-  selectFlight: (departure, flight) => {
+  selectFlight: (departure, flight, source = 'departures_board') => {
     track('flight_selected', {
-      departure: departure.iata,
-      destination: flight.destination.iata,
-      duration_minutes: flight.durationMinutes,
+      ...routeProps(departure, flight.destination, flight.durationMinutes),
       airline: flight.airline,
+      aircraft: flight.aircraft,
       is_real_route: flight.isReal,
+      source,
     });
     set({
       departure,
@@ -59,20 +63,18 @@ export const useFlightStore = create<FlightState>((set, get) => ({
     });
   },
   startFlight: () => {
-    const { departure, destination, durationMinutes } = get();
+    const { departure, destination, durationMinutes, flightInfo } = get();
     track('flight_started', {
-      departure: departure?.iata,
-      destination: destination?.iata,
-      duration_minutes: durationMinutes,
+      ...routeProps(departure, destination, durationMinutes),
+      airline: flightInfo?.airline,
     });
     set({ startTime: Date.now(), phase: 'tracker' });
   },
   landFlight: () => {
-    const { departure, destination, durationMinutes } = get();
+    const { departure, destination, durationMinutes, flightInfo } = get();
     track('flight_completed', {
-      departure: departure?.iata,
-      destination: destination?.iata,
-      duration_minutes: durationMinutes,
+      ...routeProps(departure, destination, durationMinutes),
+      airline: flightInfo?.airline,
     });
     set({ phase: 'landed' });
   },
@@ -81,9 +83,7 @@ export const useFlightStore = create<FlightState>((set, get) => ({
     const { phase, departure, destination, durationMinutes, startTime } = get();
     if (phase === 'tracker' && startTime) {
       track('flight_abandoned', {
-        departure: departure?.iata,
-        destination: destination?.iata,
-        duration_minutes: durationMinutes,
+        ...routeProps(departure, destination, durationMinutes),
         elapsed_minutes: Math.round((Date.now() - startTime) / 60000),
         via: 'reset',
       });

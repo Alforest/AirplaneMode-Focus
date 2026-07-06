@@ -3,8 +3,13 @@ import mapboxgl from 'mapbox-gl';
 import { motion } from 'framer-motion';
 import { useFlightStore } from '../../store/flightStore';
 import { greatCircleArc, haversineKm } from '../../utils/flightCalculations';
+import { getTimeline, arcFraction, isOnGround } from '../../utils/flightPhases';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string;
+
+// Camera zoom while the plane is on the ground (boarding/taxi/rollout) —
+// close enough that dark-v11 renders the actual runways and taxiways
+const GROUND_ZOOM = 13.2;
 
 const STYLES = {
   dark: 'mapbox://styles/mapbox/dark-v11',
@@ -70,6 +75,12 @@ function makeAirportMarkerEl(iata: string, color: string) {
   return el;
 }
 
+// Anchor the marker so the coordinate sits at the center of the DOT, not the
+// center of the dot+label stack (which made arcs end between dot and label).
+// The dot renders 14px tall (10px + 2px border each side), so its center is
+// 7px below the element's top edge.
+const AIRPORT_MARKER_OPTS = { anchor: 'top' as const, offset: [0, -7] as [number, number] };
+
 function makePlaneEl() {
   const el = document.createElement('div');
   el.className = 'plane-marker';
@@ -101,12 +112,14 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
   const rafRef = useRef<number>(0);
   const lastCameraPanRef = useRef(0);
   const targetZoomRef = useRef<number>(targetZoom ?? 7);
+  const onGroundRef = useRef(true);
 
   // Keep targetZoomRef in sync and apply immediately if map is ready
   useEffect(() => {
     targetZoomRef.current = targetZoom ?? 7;
     const map = mapRef.current;
     if (!map || !hasZoomedInRef.current) return;
+    if (onGroundRef.current) return; // ground camera owns zoom until takeoff
     map.easeTo({ zoom: targetZoom ?? 7, duration: 600 });
   }, [targetZoom]);
 
@@ -127,6 +140,9 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
     );
     arcPointsRef.current = arc;
 
+    const totalKm = haversineKm(departure.lat, departure.lon, destination.lat, destination.lon);
+    const tl = getTimeline(useFlightStore.getState().durationMinutes);
+
     const midIdx = Math.floor(arc.length / 2);
 
     const map = new mapboxgl.Map({
@@ -142,11 +158,11 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
     map.on('load', () => {
       addLayers(map, arc, 0);
 
-      originMarkerRef.current = new mapboxgl.Marker({ element: makeAirportMarkerEl(departure.iata, '#f0c040') })
+      originMarkerRef.current = new mapboxgl.Marker({ ...AIRPORT_MARKER_OPTS, element: makeAirportMarkerEl(departure.iata, '#f0c040') })
         .setLngLat([departure.lon, departure.lat])
         .addTo(map);
 
-      destMarkerRef.current = new mapboxgl.Marker({ element: makeAirportMarkerEl(destination.iata, '#e8a020') })
+      destMarkerRef.current = new mapboxgl.Marker({ ...AIRPORT_MARKER_OPTS, element: makeAirportMarkerEl(destination.iata, '#e8a020') })
         .setLngLat([destination.lon, destination.lat])
         .addTo(map);
 
@@ -168,15 +184,17 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
 
         // Get current position from store at this moment
         const store = useFlightStore.getState();
-        const { startTime, durationMinutes } = store;
+        const { startTime, durationMinutes, speedMultiplier } = store;
         const totalMs = durationMinutes * 60 * 1000;
-        const progress = startTime ? Math.min((Date.now() - startTime) / totalMs, 1) : 0;
-        const startIdx = Math.min(Math.floor(progress * (arc.length - 1)), arc.length - 1);
+        const progress = startTime ? Math.min(((Date.now() - startTime) * speedMultiplier) / totalMs, 1) : 0;
+        const af0 = arcFraction(progress, tl, totalKm);
+        const startIdx = Math.min(Math.floor(af0 * (arc.length - 1)), arc.length - 1);
+        onGroundRef.current = isOnGround(progress, tl);
 
         map.easeTo({
           center: arc[startIdx] as [number, number],
-          zoom: targetZoomRef.current,
-          duration: 2000,
+          zoom: onGroundRef.current ? GROUND_ZOOM : targetZoomRef.current,
+          duration: 2600,
         });
 
         // Start rAF loop — reads store directly, never triggers React renders
@@ -189,8 +207,13 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
 
           const p = Math.min(((Date.now() - st) * speedMultiplier) / (dur * 60 * 1000), 1);
 
+          // Remap session progress → arc position (parked / taxi / air / rollout)
+          const ground = isOnGround(p, tl);
+          onGroundRef.current = ground;
+          const af = arcFraction(p, tl, totalKm);
+
           // Interpolate smoothly between arc points so position is continuous
-          const rawIdx = p * (arc.length - 1);
+          const rawIdx = af * (arc.length - 1);
           const idxLow = Math.min(Math.floor(rawIdx), arc.length - 2);
           const idxHigh = idxLow + 1;
           const frac = rawIdx - idxLow;
@@ -228,12 +251,14 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
             }
           }
 
-          // Camera pan — only every 4 seconds to avoid interrupting easeTo
+          // Camera pan — only every 4 seconds to avoid interrupting easeTo.
+          // On the ground the camera stays tight on the airfield; the zoom-out
+          // to the user's chosen level doubles as the takeoff moment.
           if (now - lastCameraPanRef.current > 4000) {
             lastCameraPanRef.current = now;
             map.easeTo({
               center: pos,
-              zoom: targetZoomRef.current,
+              zoom: ground ? GROUND_ZOOM : targetZoomRef.current,
               duration: 4500,
               easing: (t) => t,
             });
@@ -263,10 +288,12 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
     styleRef.current = mapStyle;
 
     const arc = arcPointsRef.current;
-    const { startTime, durationMinutes } = useFlightStore.getState();
+    const { startTime, durationMinutes, speedMultiplier } = useFlightStore.getState();
     const totalMs = durationMinutes * 60 * 1000;
-    const progress = startTime ? Math.min((Date.now() - startTime) / totalMs, 1) : 0;
-    const currentIdx = Math.min(Math.floor(progress * (arc.length - 1)), arc.length - 1);
+    const progress = startTime ? Math.min(((Date.now() - startTime) * speedMultiplier) / totalMs, 1) : 0;
+    const totalKm = haversineKm(departure.lat, departure.lon, destination.lat, destination.lon);
+    const af = arcFraction(progress, getTimeline(durationMinutes), totalKm);
+    const currentIdx = Math.min(Math.floor(af * (arc.length - 1)), arc.length - 1);
 
     map.setStyle(STYLES[mapStyle]);
 
@@ -277,11 +304,11 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
       destMarkerRef.current?.remove();
       markerRef.current?.remove();
 
-      originMarkerRef.current = new mapboxgl.Marker({ element: makeAirportMarkerEl(departure.iata, '#f0c040') })
+      originMarkerRef.current = new mapboxgl.Marker({ ...AIRPORT_MARKER_OPTS, element: makeAirportMarkerEl(departure.iata, '#f0c040') })
         .setLngLat([departure.lon, departure.lat])
         .addTo(map);
 
-      destMarkerRef.current = new mapboxgl.Marker({ element: makeAirportMarkerEl(destination.iata, '#e8a020') })
+      destMarkerRef.current = new mapboxgl.Marker({ ...AIRPORT_MARKER_OPTS, element: makeAirportMarkerEl(destination.iata, '#e8a020') })
         .setLngLat([destination.lon, destination.lat])
         .addTo(map);
 

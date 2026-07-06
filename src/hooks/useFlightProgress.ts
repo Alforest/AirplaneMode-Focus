@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFlightStore } from '../store/flightStore';
+import { getTimeline, getFlightStatus } from '../utils/flightPhases';
 
 interface FlightProgress {
   progress: number;       // 0–1
@@ -7,6 +8,7 @@ interface FlightProgress {
   remaining: number;      // ms remaining
   elapsedSeconds: number;
   remainingSeconds: number;
+  status: string;         // Boarding / Taxiing / Ascending / …
 }
 
 export function useFlightProgress(): FlightProgress {
@@ -53,21 +55,6 @@ export function useFlightProgress(): FlightProgress {
     remaining,
     elapsedSeconds: Math.floor(elapsed / 1000),
     remainingSeconds: Math.floor(remaining / 1000),
-  };
-}
-
-export function getFlightStatus(progress: number): string {
-  if (progress < 0.20) return 'Ascending';
-  if (progress < 0.80) return 'Cruising';
-  if (progress < 0.95) return 'Descending';
-  return 'Landed!';
-}
-
-export function getSimulatedStats(progress: number, totalDistKm: number) {
-  const curve = Math.sin(Math.PI * progress);
-  return {
-    altitudeFt: Math.round(35000 * curve),
-    speedMph: Math.round(575 * curve),
-    distRemainingKm: Math.round(totalDistKm * (1 - progress)),
+    status: getFlightStatus(progress, getTimeline(durationMinutes)),
   };
 }

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useFlightProgress, getSimulatedStats } from '../../hooks/useFlightProgress';
+import { useFlightProgress } from '../../hooks/useFlightProgress';
 import { useFlightStore } from '../../store/flightStore';
 import { haversineKm } from '../../utils/flightCalculations';
+import { getTimeline, getSimulatedStats } from '../../utils/flightPhases';
 
 const StatItem: React.FC<{ label: string; value: string; unit: string }> = ({ label, value, unit }) => (
   <div className="text-center">
@@ -16,7 +17,7 @@ const StatItem: React.FC<{ label: string; value: string; unit: string }> = ({ la
 );
 
 const FlightStats: React.FC = () => {
-  const { departure, destination } = useFlightStore();
+  const { departure, destination, durationMinutes } = useFlightStore();
   const { progress } = useFlightProgress();
 
   const totalDistKm =
@@ -24,16 +25,18 @@ const FlightStats: React.FC = () => {
       ? haversineKm(departure.lat, departure.lon, destination.lat, destination.lon)
       : 0;
 
+  const timeline = getTimeline(durationMinutes);
+
   // Throttle display to once per second to prevent flashing
   const progressRef = useRef(progress);
   progressRef.current = progress;
   const [displayedStats, setDisplayedStats] = useState(() =>
-    getSimulatedStats(progress, totalDistKm)
+    getSimulatedStats(progress, timeline, totalDistKm)
   );
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setDisplayedStats(getSimulatedStats(progressRef.current, totalDistKm));
+      setDisplayedStats(getSimulatedStats(progressRef.current, getTimeline(useFlightStore.getState().durationMinutes), totalDistKm));
     }, 1000);
     return () => clearInterval(interval);
   }, [totalDistKm]);

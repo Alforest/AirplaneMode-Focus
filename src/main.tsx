@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { initAnalytics, track } from './lib/analytics';
+import { initAnalytics, track, routeProps } from './lib/analytics';
 import { initAds } from './lib/ads';
 import { useFlightStore } from './store/flightStore';
 import './index.css';
@@ -17,9 +17,7 @@ window.addEventListener('pagehide', () => {
     useFlightStore.getState();
   if (phase !== 'tracker' || !startTime) return;
   track('flight_abandoned', {
-    departure: departure?.iata,
-    destination: destination?.iata,
-    duration_minutes: durationMinutes,
+    ...routeProps(departure, destination, durationMinutes),
     elapsed_minutes: Math.round((Date.now() - startTime) / 60000),
     via: 'pagehide',
   }, { instant: true });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useFlightProgress, getFlightStatus } from '../../hooks/useFlightProgress';
+import { useFlightProgress } from '../../hooks/useFlightProgress';
 
 function formatCountdown(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -10,8 +10,7 @@ function formatCountdown(seconds: number): string {
 }
 
 const StudyTimer: React.FC = () => {
-  const { progress, remainingSeconds } = useFlightProgress();
-  const status = getFlightStatus(progress);
+  const { progress, remainingSeconds, status } = useFlightProgress();
 
   const circumference = 2 * Math.PI * 54;
   const strokeDashoffset = circumference * (1 - progress);
