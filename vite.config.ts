@@ -15,7 +15,9 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('/src/data/')) return 'flight-data';
-          if (id.includes('node_modules/mapbox-gl')) return 'mapbox';
+          // mapbox-gl is deliberately NOT a manual chunk: manual chunks get
+          // <link rel="modulepreload"> in index.html, defeating the lazy
+          // import of MapView/FlightGlobe. Rollup splits it naturally.
           if (id.includes('node_modules/framer-motion')) return 'framer';
           if (id.includes('node_modules/zustand')) return 'zustand';
           if (id.includes('node_modules/react')) return 'react-vendor';

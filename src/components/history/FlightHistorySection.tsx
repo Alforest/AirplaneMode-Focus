@@ -1,9 +1,29 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { motion } from 'framer-motion';
 import { useHistoryStore } from '../../store/historyStore';
-import FlightGlobe from './FlightGlobe';
 import HistoryStats from './HistoryStats';
 import RecentFlights from './RecentFlights';
+
+// Lazy: FlightGlobe pulls mapbox-gl — don't make the landing page pay for it.
+// It's only rendered once flights exist; first-time visitors get the static
+// empty state below and never download the mapbox chunk.
+const FlightGlobe = lazy(() => import('./FlightGlobe'));
+
+const GlobeEmptyState: React.FC = () => (
+  <div
+    className="w-full h-full rounded-2xl flex flex-col items-center justify-center gap-5"
+    style={{ background: '#030508', border: '1px solid rgba(240,192,64,0.08)' }}
+  >
+    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="rgba(240,192,64,0.15)" strokeWidth="0.8">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+    <p className="font-mono text-muted-white/25 text-xs uppercase tracking-widest text-center leading-relaxed px-8">
+      Complete your first flight<br />to see your routes on the globe
+    </p>
+  </div>
+);
 
 const FlightHistorySection: React.FC = () => {
   const flights = useHistoryStore(s => s.flights);
@@ -21,7 +41,7 @@ const FlightHistorySection: React.FC = () => {
 
         {/* Section header */}
         <div className="flex items-center gap-4 mb-8">
-          <span style={{
+          <h2 style={{
             color: 'rgba(240,192,64,0.35)',
             fontFamily: "'JetBrains Mono',monospace",
             fontSize: '0.7rem',
@@ -29,7 +49,7 @@ const FlightHistorySection: React.FC = () => {
             textTransform: 'uppercase',
           }}>
             Your Flight Log
-          </span>
+          </h2>
           <div className="flex-1 h-px" style={{ background: 'rgba(240,192,64,0.08)' }} />
           {flights.length > 0 && (
             <span style={{
@@ -47,7 +67,13 @@ const FlightHistorySection: React.FC = () => {
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           {/* Globe */}
           <div className="flex-1 md:basis-[58%] h-[340px] md:h-[480px]">
-            <FlightGlobe flights={flights} />
+            {flights.length > 0 ? (
+              <Suspense fallback={<div className="w-full h-full rounded-2xl" style={{ background: '#030508', border: '1px solid rgba(240,192,64,0.08)' }} />}>
+                <FlightGlobe flights={flights} />
+              </Suspense>
+            ) : (
+              <GlobeEmptyState />
+            )}
           </div>
 
           {/* Stats */}

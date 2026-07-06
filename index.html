@@ -6,7 +6,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0a0e1a" />
     <meta name="google-adsense-account" content="ca-pub-8261596008506916" />
-    <title>FocusFlight.io</title>
+
+    <!-- SEO -->
+    <title>FocusFlight — The Study Timer That Turns Focus Into Flights</title>
+    <meta name="description" content="Free gamified study timer. Pick a real flight route, put your phone on airplane mode, and study until you land — live flight map, real airlines, no account needed." />
+    <link rel="canonical" href="https://focusflight.io/" />
+
+    <!-- Open Graph / social sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="FocusFlight" />
+    <meta property="og:title" content="FocusFlight — The Study Timer That Turns Focus Into Flights" />
+    <meta property="og:description" content="Pick a real flight route, go airplane mode, and study until you land. Free, no account." />
+    <meta property="og:url" content="https://focusflight.io/" />
+    <meta property="og:image" content="https://focusflight.io/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FocusFlight — The Study Timer That Turns Focus Into Flights" />
+    <meta name="twitter:description" content="Pick a real flight route, go airplane mode, and study until you land. Free, no account." />
+    <meta name="twitter:image" content="https://focusflight.io/og-image.png" />
+
+    <!-- Structured data. FAQ answers must stay in sync with the visible FAQ
+         in src/components/landing/HowItWorks.tsx (Google guideline) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": "FocusFlight",
+          "url": "https://focusflight.io/",
+          "applicationCategory": "EducationalApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "description": "A free gamified study timer: board a real flight route, put your phone on airplane mode, and study until the plane lands on a live flight map."
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What is FocusFlight?",
+              "acceptedAnswer": { "@type": "Answer", "text": "A free, gamified study timer. Instead of setting \"45 minutes\", you board a real flight route and study until it lands — the flight metaphor makes long focus sessions feel like a journey instead of a grind." }
+            },
+            {
+              "@type": "Question",
+              "name": "Are the flights real?",
+              "acceptedAnswer": { "@type": "Answer", "text": "The routes, airlines, and aircraft are real (based on the OpenFlights dataset), and durations reflect real great-circle distances. The plane on the map is a simulation — no live flight data is used." }
+            },
+            {
+              "@type": "Question",
+              "name": "Is it free? Do I need an account?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Completely free, no account, no sign-up. Your flight log is stored only in your own browser." }
+            },
+            {
+              "@type": "Question",
+              "name": "Why airplane mode?",
+              "acceptedAnswer": { "@type": "Answer", "text": "It's the whole trick: on a plane your phone is useless, so your brain stops checking it. Recreating that on the ground removes the interruption loop that breaks deep work." }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -17,6 +79,15 @@
 </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>FocusFlight — the study timer that turns focus into flights</h1>
+      <p>
+        FocusFlight is a free gamified study timer. Enter any airport code, pick a
+        real flight route, put your phone on airplane mode, and study until your
+        plane lands on a live flight map. No account needed. JavaScript is
+        required to board.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

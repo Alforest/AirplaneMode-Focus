@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { motion } from 'framer-motion';
-import MapView from './MapView';
+
+// Lazy: MapView pulls the ~1.7 MB mapbox-gl chunk — keep it off the landing
+// page load (Core Web Vitals) and fetch it only when a flight starts
+const MapView = lazy(() => import('./MapView'));
 import StudyTimer from './StudyTimer';
 import FlightStats from './FlightStats';
 import AdSlot from './AdSlot';
@@ -138,7 +141,9 @@ const TrackerPage: React.FC = () => {
         >
           {/* Map */}
           <div className="absolute inset-2 md:inset-4">
-            <MapView targetZoom={targetZoom} />
+            <Suspense fallback={<div className="w-full h-full rounded-2xl bg-midnight/40" />}>
+              <MapView targetZoom={targetZoom} />
+            </Suspense>
           </div>
 
           {/* Countdown floats over the map on phones */}

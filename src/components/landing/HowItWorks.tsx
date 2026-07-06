@@ -59,7 +59,7 @@ const HowItWorks: React.FC = () => {
 
         {/* How it works */}
         <div className="flex items-center gap-4 mb-8">
-          <span style={{
+          <h2 style={{
             color: 'rgba(240,192,64,0.35)',
             fontFamily: "'JetBrains Mono',monospace",
             fontSize: '0.7rem',
@@ -67,7 +67,7 @@ const HowItWorks: React.FC = () => {
             textTransform: 'uppercase',
           }}>
             How it works
-          </span>
+          </h2>
           <div className="flex-1 h-px" style={{ background: 'rgba(240,192,64,0.08)' }} />
         </div>
 
@@ -93,9 +93,10 @@ const HowItWorks: React.FC = () => {
           ))}
         </div>
 
-        {/* FAQ */}
+        {/* FAQ — answers are mirrored in the FAQPage JSON-LD in index.html;
+            keep both in sync */}
         <div className="flex items-center gap-4 mb-8">
-          <span style={{
+          <h2 style={{
             color: 'rgba(240,192,64,0.35)',
             fontFamily: "'JetBrains Mono',monospace",
             fontSize: '0.7rem',
@@ -103,7 +104,7 @@ const HowItWorks: React.FC = () => {
             textTransform: 'uppercase',
           }}>
             Questions
-          </span>
+          </h2>
           <div className="flex-1 h-px" style={{ background: 'rgba(240,192,64,0.08)' }} />
         </div>
 
