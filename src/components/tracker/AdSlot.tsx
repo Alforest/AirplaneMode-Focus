@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { adClientId, adSlotId, adsEnabled, pushAd } from '../../lib/ads';
 import { track } from '../../lib/analytics';
+import { useFlightStore } from '../../store/flightStore';
 
 // ---------------------------------------------------------------------------
 // AdSlot — the single AdSense unit, tracker sidebar only. Fixed 250×250 so
@@ -15,6 +16,7 @@ const AdSlot: React.FC = () => {
   const insRef = useRef<HTMLModElement>(null);
   const pushed = useRef(false); // StrictMode guard — double push({}) throws
   const [status, setStatus] = useState<'pending' | 'filled' | 'unfilled'>('pending');
+  const devChromeHidden = useFlightStore((s) => s.devChromeHidden);
 
   const live = adsEnabled();
 
@@ -55,6 +57,7 @@ const AdSlot: React.FC = () => {
   // Dev / preview without keys: dashed placeholder so the layout stays tunable
   if (!live) {
     if (import.meta.env.PROD) return null;
+    if (devChromeHidden) return null; // ` toggle — clean frame for recordings
     return (
       <div className="glass-card rounded-xl px-4 py-3">
         <div className="font-mono text-muted-white/25 text-xs uppercase tracking-widest mb-2 text-center">

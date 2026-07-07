@@ -15,6 +15,8 @@ interface FlightState {
   startTime: number | null;
   flightInfo: FlightInfo | null;
   speedMultiplier: number;
+  /** Dev-only: hides all dev chrome (toolbar, ad placeholder) for clean screen recordings */
+  devChromeHidden: boolean;
 
   setPhase: (phase: Phase) => void;
   setDeparture: (airport: Airport) => void;
@@ -23,6 +25,7 @@ interface FlightState {
   startFlight: () => void;
   landFlight: () => void;
   setSpeedMultiplier: (multiplier: number) => void;
+  toggleDevChrome: () => void;
   reset: () => void;
 }
 
@@ -35,6 +38,7 @@ export const useFlightStore = create<FlightState>((set, get) => ({
   startTime: null,
   flightInfo: null,
   speedMultiplier: 1,
+  devChromeHidden: false,
 
   setPhase: (phase) => set({ phase }),
   setDeparture: (airport) => {
@@ -78,7 +82,21 @@ export const useFlightStore = create<FlightState>((set, get) => ({
     });
     set({ phase: 'landed' });
   },
-  setSpeedMultiplier: (multiplier) => set({ speedMultiplier: multiplier }),
+  setSpeedMultiplier: (multiplier) => {
+    // Rebase startTime so virtual elapsed time is continuous across the
+    // change — otherwise the new multiplier applies retroactively to all
+    // wall time and the plane teleports.
+    const { startTime, speedMultiplier } = get();
+    if (startTime !== null && multiplier !== speedMultiplier) {
+      const now = Date.now();
+      const virtualElapsed = (now - startTime) * speedMultiplier;
+      set({ startTime: now - virtualElapsed / multiplier, speedMultiplier: multiplier });
+    } else {
+      set({ speedMultiplier: multiplier });
+    }
+  },
+  // Deliberately survives reset() so multi-take recordings stay clean
+  toggleDevChrome: () => set((s) => ({ devChromeHidden: !s.devChromeHidden })),
   reset: () => {
     const { phase, departure, destination, durationMinutes, startTime } = get();
     if (phase === 'tracker' && startTime) {

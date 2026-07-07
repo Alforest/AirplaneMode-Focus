@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFlightStore } from '../../store/flightStore';
 
 const SPEEDS = [
@@ -8,9 +8,28 @@ const SPEEDS = [
   { label: '300×',  value: 300 },
 ];
 
+// ` (backtick) toggles the whole toolbar — including the DEV pill — so
+// screen recordings can run with a clean frame.
+const TOGGLE_KEY = '`';
+
 const DevToolbar: React.FC = () => {
-  const { speedMultiplier, setSpeedMultiplier, phase, landFlight } = useFlightStore();
+  const { speedMultiplier, setSpeedMultiplier, phase, landFlight, devChromeHidden } = useFlightStore();
   const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== TOGGLE_KEY || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      e.preventDefault();
+      useFlightStore.getState().toggleDevChrome();
+      setOpen(true);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  if (devChromeHidden) return null;
 
   if (!open) {
     return (
@@ -42,7 +61,7 @@ const DevToolbar: React.FC = () => {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <span style={{ fontSize: '0.6rem', color: 'rgba(240,192,64,0.5)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-          ⚡ Dev Tools
+          ⚡ Dev Tools <span style={{ color: 'rgba(208,216,232,0.25)', textTransform: 'none', letterSpacing: 0 }}>(` hides)</span>
         </span>
         <button
           onClick={() => setOpen(false)}
