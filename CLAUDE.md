@@ -166,7 +166,8 @@ src/
 - **StrictMode guard**: use `useRef` initialized flag — `if (mapRef.current) return;`
 - Arc: 100 interpolated great-circle points (manual spherical interpolation — NOT a straight line)
 - Plane rotation: CSS `transform: rotate(Xdeg)` computed from bearing between consecutive arc points
-- Camera: `map.easeTo({ center, zoom })` to smoothly follow the plane
+- Camera: `map.easeTo({ center, zoom })` to smoothly follow the plane; the "Route" zoom level (`targetZoom = 'fit'`) instead frames the whole arc via `fitBounds` and suppresses all camera movement, including the ground-zoom override
+- Arc longitudes are unwrapped (may exceed ±180) so date-line routes don't circle the globe — Mapbox renders them on the nearest world copy
 - Two GeoJSON layers: full arc (dashed/dim) + traveled portion (solid gold)
 
 ---

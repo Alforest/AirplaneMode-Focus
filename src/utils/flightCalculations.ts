@@ -66,7 +66,16 @@ export function greatCircleArc(
     const z = A * Math.sin(φ1) + B * Math.sin(φ2);
 
     const lat = toDeg(Math.atan2(z, Math.sqrt(x * x + y * y)));
-    const lon = toDeg(Math.atan2(y, x));
+    let lon = toDeg(Math.atan2(y, x));
+
+    // Unwrap so consecutive lons never jump across the antimeridian — a
+    // ±179° hop makes the GeoJSON line (and the plane) circle the globe the
+    // wrong way. Mapbox renders lons beyond ±180 on the nearest world copy.
+    const prev = points[points.length - 1];
+    if (prev) {
+      while (lon - prev[0] > 180) lon -= 360;
+      while (lon - prev[0] < -180) lon += 360;
+    }
 
     points.push([lon, lat]);
   }

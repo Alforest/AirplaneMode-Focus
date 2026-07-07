@@ -74,7 +74,8 @@ const SplitFlapText: React.FC<{ text: string }> = ({ text }) => (
   </div>
 );
 
-const ZOOM_LEVELS = [
+const ZOOM_LEVELS: { zoom: number | 'fit'; label: string }[] = [
+  { zoom: 'fit', label: 'Route' },   // frame the whole flight path — camera never moves
   { zoom: 4,  label: 'World' },
   { zoom: 6,  label: 'Region' },
   { zoom: 7,  label: 'Country' },
@@ -85,7 +86,7 @@ const ZOOM_LEVELS = [
 const TrackerPage: React.FC = () => {
   const { departure, destination, flightInfo } = useFlightStore();
   const isPhone = useIsPhone();
-  const [zoomIdx, setZoomIdx] = useState(2); // default: "Country" (zoom 5)
+  const [zoomIdx, setZoomIdx] = useState(3); // default: "Country"
   const [zoomOpen, setZoomOpen] = useState(false); // phones: slider collapsed by default
 
   const targetZoom = ZOOM_LEVELS[zoomIdx].zoom;

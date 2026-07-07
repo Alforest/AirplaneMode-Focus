@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { CompletedFlight } from '../../types/history';
+import { greatCircleArc } from '../../utils/flightCalculations';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string;
 
@@ -11,10 +12,13 @@ function buildArcGeoJSON(flights: CompletedFlight[]): GeoJSON.FeatureCollection 
       type: 'Feature',
       geometry: {
         type: 'LineString',
-        coordinates: [
-          [f.departure.lon, f.departure.lat],
-          [f.destination.lon, f.destination.lat],
-        ],
+        // A raw 2-point line renders as a flat-map Mercator chord — wrong on
+        // the globe and the long way around across the date line.
+        coordinates: greatCircleArc(
+          f.departure.lat, f.departure.lon,
+          f.destination.lat, f.destination.lon,
+          64
+        ),
       },
       properties: { id: f.id },
     })),

@@ -93,7 +93,18 @@ function makePlaneEl() {
 }
 
 interface MapViewProps {
-  targetZoom?: number;
+  /** Mapbox zoom level, or 'fit' — frame the whole route and never move the camera */
+  targetZoom?: number | 'fit';
+}
+
+function fitRouteBounds(map: mapboxgl.Map, arc: [number, number][], duration: number) {
+  if (!arc.length) return;
+  const lons = arc.map(p => p[0]);
+  const lats = arc.map(p => p[1]);
+  map.fitBounds(
+    [[Math.min(...lons) - 3, Math.min(...lats) - 3], [Math.max(...lons) + 3, Math.max(...lats) + 3]],
+    { padding: 60, duration }
+  );
 }
 
 const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
@@ -111,7 +122,7 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
   const hasZoomedInRef = useRef(false);
   const rafRef = useRef<number>(0);
   const lastCameraPanRef = useRef(0);
-  const targetZoomRef = useRef<number>(targetZoom ?? 7);
+  const targetZoomRef = useRef<number | 'fit'>(targetZoom ?? 7);
   const onGroundRef = useRef(true);
 
   // Keep targetZoomRef in sync and apply immediately if map is ready
@@ -119,6 +130,11 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
     targetZoomRef.current = targetZoom ?? 7;
     const map = mapRef.current;
     if (!map || !hasZoomedInRef.current) return;
+    if (targetZoom === 'fit') {
+      // Frame the whole route; the animation loop leaves the camera alone
+      fitRouteBounds(map, arcPointsRef.current, 1200);
+      return;
+    }
     if (onGroundRef.current) return; // ground camera owns zoom until takeoff
     map.easeTo({ zoom: targetZoom ?? 7, duration: 600 });
   }, [targetZoom]);
@@ -171,12 +187,7 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
         .addTo(map);
 
       // Fit full route overview
-      const lons = arc.map(p => p[0]);
-      const lats = arc.map(p => p[1]);
-      map.fitBounds(
-        [[Math.min(...lons) - 3, Math.min(...lats) - 3], [Math.max(...lons) + 3, Math.max(...lats) + 3]],
-        { padding: 60, duration: 1800 }
-      );
+      fitRouteBounds(map, arc, 1800);
 
       // After overview, zoom in and start the animation loop
       setTimeout(() => {
@@ -191,11 +202,13 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
         const startIdx = Math.min(Math.floor(af0 * (arc.length - 1)), arc.length - 1);
         onGroundRef.current = isOnGround(progress, tl);
 
-        map.easeTo({
-          center: arc[startIdx] as [number, number],
-          zoom: onGroundRef.current ? GROUND_ZOOM : targetZoomRef.current,
-          duration: 2600,
-        });
+        if (targetZoomRef.current !== 'fit') {
+          map.easeTo({
+            center: arc[startIdx] as [number, number],
+            zoom: onGroundRef.current ? GROUND_ZOOM : targetZoomRef.current,
+            duration: 2600,
+          });
+        }
 
         // Start rAF loop — reads store directly, never triggers React renders
         const tick = () => {
@@ -256,12 +269,14 @@ const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
           // to the user's chosen level doubles as the takeoff moment.
           if (now - lastCameraPanRef.current > 4000) {
             lastCameraPanRef.current = now;
-            map.easeTo({
-              center: pos,
-              zoom: ground ? GROUND_ZOOM : targetZoomRef.current,
-              duration: 4500,
-              easing: (t) => t,
-            });
+            if (targetZoomRef.current !== 'fit') {
+              map.easeTo({
+                center: pos,
+                zoom: ground ? GROUND_ZOOM : targetZoomRef.current,
+                duration: 4500,
+                easing: (t) => t,
+              });
+            }
           }
 
           rafRef.current = requestAnimationFrame(tick);
