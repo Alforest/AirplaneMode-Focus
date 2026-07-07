@@ -28,7 +28,9 @@
       "Bash(sed 's/,$//')",
       "Bash(curl -sL \"https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat\" -o scripts/data/routes.dat)",
       "Bash(curl -sL \"https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat\" -o scripts/data/airlines.dat)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(npx playwright *)",
+      "Read(//Users/alforest/Library/Caches/ms-playwright/**)"
     ]
   }
 }
