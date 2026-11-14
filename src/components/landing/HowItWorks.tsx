@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import PrivacyPolicy from '../shared/PrivacyPolicy';
+import SupportWidget from '../shared/SupportWidget';
 
 // ---------------------------------------------------------------------------
 // HowItWorks — below-the-fold content section: the concept in 4 steps, a
@@ -117,6 +118,8 @@ const HowItWorks: React.FC = () => {
           ))}
         </div>
 
+        <SupportWidget />
+
         {/* Footer */}
         <footer
           className="flex flex-col sm:flex-row items-center justify-between gap-3 py-6"
@@ -125,12 +128,17 @@ const HowItWorks: React.FC = () => {
           <span className="font-mono text-muted-white/20 text-xs">
             FocusFlight · study like you're flying
           </span>
-          <button
-            onClick={() => setPrivacyOpen(true)}
-            className="font-mono text-muted-white/30 hover:text-gold text-xs uppercase tracking-[0.15em] transition-colors px-2 py-1"
-          >
-            Privacy
-          </button>
+          <nav aria-label="Footer" className="flex items-center gap-3">
+            <a href="#contact" className="font-mono text-muted-white/60 hover:text-gold text-xs uppercase tracking-[0.15em] transition-colors px-2 py-2 focus-visible:outline focus-visible:outline-gold rounded">
+              Contact
+            </a>
+            <button
+              onClick={() => setPrivacyOpen(true)}
+              className="font-mono text-muted-white/60 hover:text-gold text-xs uppercase tracking-[0.15em] transition-colors px-2 py-2 focus-visible:outline focus-visible:outline-gold rounded"
+            >
+              Privacy
+            </button>
+          </nav>
         </footer>
       </div>
 

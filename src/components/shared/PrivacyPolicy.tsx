@@ -1,5 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { CONTACT_EMAIL } from '../../lib/contact';
 
 // ---------------------------------------------------------------------------
 // PrivacyPolicy — static modal, opened from the landing footer. Required by
@@ -118,10 +119,10 @@ const PrivacyPolicy: React.FC<Props> = ({ open, onClose }) => (
           <P>
             Questions? Reach out at{' '}
             <a
-              href="mailto:admin@focusflight.io"
+              href={`mailto:${CONTACT_EMAIL}`}
               className="text-gold/80 hover:text-gold underline decoration-gold/30"
             >
-              admin@focusflight.io
+              {CONTACT_EMAIL}
             </a>.
           </P>
         </motion.div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useFlightStore } from './store/flightStore';
 import Hero from './components/landing/Hero';
@@ -7,6 +7,7 @@ import BoardingConfirm from './components/boarding/BoardingConfirm';
 import TrackerPage from './components/tracker/TrackerPage';
 import LandedScreen from './components/shared/LandedScreen';
 import DevToolbar from './components/shared/DevToolbar';
+import ContactPage from './components/shared/ContactPage';
 
 const pageVariants = {
   initial: { opacity: 0, x: 60 },
@@ -16,6 +17,15 @@ const pageVariants = {
 
 const App: React.FC = () => {
   const { phase } = useFlightStore();
+  const [contactOpen, setContactOpen] = useState(() => window.location.hash === '#contact');
+
+  useEffect(() => {
+    const updatePage = () => setContactOpen(window.location.hash === '#contact');
+    window.addEventListener('hashchange', updatePage);
+    return () => window.removeEventListener('hashchange', updatePage);
+  }, []);
+
+  if (contactOpen) return <ContactPage />;
 
   return (
     <div className="min-h-screen bg-navy text-muted-white font-sans">

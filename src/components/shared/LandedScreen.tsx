@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useFlightStore } from '../../store/flightStore';
 import { useHistoryStore } from '../../store/historyStore';
 import { haversineKm, formatDuration } from '../../utils/flightCalculations';
+import SupportWidget from './SupportWidget';
 
 // Confetti particle
 const Particle: React.FC<{ delay: number; x: number; color: string }> = ({ delay, x, color }) => (
@@ -183,6 +184,7 @@ const LandedScreen: React.FC = () => {
         >
           Book Another Flight
         </motion.button>
+        <SupportWidget compact />
       </div>
     </div>
   );
