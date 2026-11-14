@@ -12,6 +12,7 @@ export default defineConfig({
   build: {
     target: 'es2020',
     rollupOptions: {
+      input: ['index.html', 'privacy/index.html', 'terms/index.html'],
       output: {
         manualChunks(id) {
           if (id.includes('/src/data/')) return 'flight-data';

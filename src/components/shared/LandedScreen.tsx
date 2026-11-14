@@ -29,7 +29,7 @@ const Particle: React.FC<{ delay: number; x: number; color: string }> = ({ delay
 const CONFETTI_COLORS = ['#f0c040', '#e8a020', '#ffffff', '#d0d8e8', '#7ec8e3', '#ffd700'];
 
 const LandedScreen: React.FC = () => {
-  const { departure, destination, durationMinutes, flightInfo, reset } = useFlightStore();
+  const { departure, destination, durationMinutes, flightInfo, sessionId, reset } = useFlightStore();
   const addFlight = useHistoryStore(s => s.addFlight);
   const savedRef = useRef(false);
   const [loggedBadge, setLoggedBadge] = useState(false);
@@ -50,10 +50,10 @@ const LandedScreen: React.FC = () => {
 
   // Save flight to history once on mount
   useEffect(() => {
-    if (savedRef.current || !departure || !destination || !flightInfo) return;
+    if (savedRef.current || !sessionId || !departure || !destination || !flightInfo) return;
     savedRef.current = true;
     addFlight({
-      id: crypto.randomUUID(),
+      id: sessionId,
       departure: { iata: departure.iata, city: departure.city, country: departure.country, lat: departure.lat, lon: departure.lon },
       destination: { iata: destination.iata, city: destination.city, country: destination.country, lat: destination.lat, lon: destination.lon },
       durationMinutes,

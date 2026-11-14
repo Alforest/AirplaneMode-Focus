@@ -1,3 +1,5 @@
+import { useAuthStore } from '../../store/authStore';
+import { supabase } from '../../lib/supabase';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import CloudBackground from '../shared/CloudBackground';
@@ -40,6 +42,7 @@ const Clock: React.FC = () => {
 };
 
 const Hero: React.FC = () => {
+  const signedIn = useAuthStore(state => !!state.user);
   return (
     <>
     <div className="relative min-h-screen bg-navy overflow-hidden flex flex-col">
@@ -91,6 +94,8 @@ const Hero: React.FC = () => {
           <span className="hidden sm:block font-mono text-xs tracking-[0.2em] uppercase text-muted-white/30">
             Terminal 1
           </span>
+          <button type="button" onClick={() => document.getElementById('flight-log')?.scrollIntoView({ behavior: 'smooth' })}
+            className="font-mono text-xs text-gold/70 hover:text-gold">{supabase ? signedIn ? 'Account' : 'Sign in' : 'Flight log'}</button>
           <Clock />
         </div>
       </motion.header>

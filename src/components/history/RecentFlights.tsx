@@ -5,6 +5,7 @@ import { formatDuration } from '../../utils/flightCalculations';
 
 const RecentFlights: React.FC = () => {
   const flights = useHistoryStore(s => s.flights);
+  const isAccount = useHistoryStore(s => s.owner !== 'guest');
   const clearHistory = useHistoryStore(s => s.clearHistory);
   const [confirmClear, setConfirmClear] = useState(false);
 
@@ -76,7 +77,7 @@ const RecentFlights: React.FC = () => {
         <div className="mt-6 flex justify-end">
           {confirmClear ? (
             <div className="flex items-center gap-3">
-              <span className="font-mono text-muted-white/30 text-xs">Clear all history?</span>
+              <span className="font-mono text-muted-white/30 text-xs">{isAccount ? 'Clear these flights on all synced devices?' : 'Clear all history?'} </span>
               <button
                 onClick={() => { clearHistory(); setConfirmClear(false); }}
                 className="font-mono text-xs text-red-400/60 hover:text-red-400 transition-colors tracking-widest uppercase"

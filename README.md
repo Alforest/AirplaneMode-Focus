@@ -99,3 +99,73 @@ src/
 ## License
 
 MIT
+
+## Optional Google login and cloud history
+
+Guest mode works without Supabase configuration. To enable accounts:
+
+1. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in your local `.env`
+   and in your hosting provider's **build environment**, then rebuild/redeploy.
+   These are public credentials. Never put a Supabase secret/service-role key in a `VITE_` variable.
+   For this repository's GitHub Pages deployment, set matching repository **Variables**
+   under Settings → Secrets and variables → Actions → Variables. The deployment
+   workflow reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` there.
+2. Run [`supabase/migrations/202611140001_flight_history.sql`](supabase/migrations/202611140001_flight_history.sql)
+   in your project's Supabase SQL Editor. The table uses row-level security: only the
+   signed-in owner can read or write their rows. This is private history, not verified
+   competitive study time.
+3. In Google Cloud Console, configure the OAuth consent screen and create an OAuth
+   client of type **Web application**. Add this authorized redirect URI:
+   `https://nnkikltsndrnjtnnormx.supabase.co/auth/v1/callback`.
+   If the consent screen is in Testing, add your Google account as a test user.
+4. In Supabase → Authentication → Sign In / Providers → Google, enable Google and
+   enter that Google client ID and client secret. The Google secret stays in Supabase.
+5. In Supabase → Authentication → URL Configuration, set Site URL to
+   `https://focusflight.io/`. Add allowed redirect URLs:
+   - `https://focusflight.io/`
+   - `http://localhost:5173/` (use the exact port printed by Vite)
+   - `https://www.focusflight.io/` only if you also serve the app there.
+6. Test Google login from a normal browser tab. The app returns to the same origin
+   and pathname after OAuth using PKCE. No extra callback route is needed.
+
+### Sync behavior
+
+- The Flight Log contains the Google sign-in/account panel; studying requires no login.
+- Guest flights stay separate until explicitly imported. Import moves them into the
+  current account and deduplicates by flight ID.
+- Account caches are separated by Supabase user ID. Signing out restores the guest log.
+  Cached account flights remain in browser storage for offline access on future logins.
+- Flights are saved locally first. Pending writes survive reloads and retry on network
+  reconnection, window focus, every 30 seconds, or **Sync now**.
+- Clearing history creates permanent deletion markers, so stale/offline devices cannot
+  restore deleted flights. It clears flights already known on that device; sync before
+  clearing to include newly completed flights from other devices.
+- Flight data is immutable once uploaded. Server deletion markers win over uploads.
+- This release does not resume an active timer across devices or validate leaderboard scores.
+
+### Release verification
+
+Run `npm run build` and `npm run test:history`. Then, against configured Supabase:
+
+1. Complete a guest flight; reload and confirm it remains.
+2. Sign in with Google, import guest flights, and verify the guest log is empty on sign-out.
+3. Sign in on another device and check that flights and totals match.
+4. Go offline, complete a flight, reload, reconnect, and confirm exactly one cloud copy.
+5. Clear signed-in history, then reconnect a stale device; confirm deleted flights stay gone.
+6. Switch between two accounts and confirm their logs never mix. Verify a user's
+   access token cannot select or update the other user's rows through the Data API.
+7. Cancel Google login and verify guest study sessions still work.
+
+The GitHub connection alone does not apply this SQL or configure OAuth/hosting variables.
+
+## Public policy pages
+
+- Privacy Policy: `https://focusflight.io/privacy/`
+- Terms of Service: `https://focusflight.io/terms/`
+
+Use these URLs in Google Auth Platform → Branding after deploying. Vite builds
+`privacy/index.html` and `terms/index.html` as standalone pages with shared styling
+from `src/legal.css`. GitHub Pages serves them directly, without SPA rewrites or
+JavaScript. They also work under the repository's GitHub Pages subpath. The footer
+and Google sign-in panel link to both pages. Policy text must be kept consistent
+with account, retention, analytics, and advertising behavior when features change.

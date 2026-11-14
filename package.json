@@ -8,9 +8,11 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "data:airports": "tsx scripts/buildAirports.ts",
-    "data:routes": "tsx scripts/buildAirlineRoutes.ts"
+    "data:routes": "tsx scripts/buildAirlineRoutes.ts",
+    "test:history": "tsx --test tests/history.test.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
     "framer-motion": "^10.18.0",
     "mapbox-gl": "^3.10.0",
     "posthog-js": "^1.396.6",

@@ -13,6 +13,7 @@ interface FlightState {
   boardFlight: BoardFlight | null;
   durationMinutes: number;
   startTime: number | null;
+  sessionId: string | null;
   flightInfo: FlightInfo | null;
   speedMultiplier: number;
   /** Dev-only: hides all dev chrome (toolbar, ad placeholder) for clean screen recordings */
@@ -36,6 +37,7 @@ export const useFlightStore = create<FlightState>((set, get) => ({
   boardFlight: null,
   durationMinutes: 120,
   startTime: null,
+  sessionId: null,
   flightInfo: null,
   speedMultiplier: 1,
   devChromeHidden: false,
@@ -72,7 +74,7 @@ export const useFlightStore = create<FlightState>((set, get) => ({
       ...routeProps(departure, destination, durationMinutes),
       airline: flightInfo?.airline,
     });
-    set({ startTime: Date.now(), phase: 'tracker' });
+    set({ startTime: Date.now(), sessionId: crypto.randomUUID(), phase: 'tracker' });
   },
   landFlight: () => {
     const { departure, destination, durationMinutes, flightInfo } = get();
@@ -113,6 +115,7 @@ export const useFlightStore = create<FlightState>((set, get) => ({
       boardFlight: null,
       durationMinutes: 120,
       startTime: null,
+      sessionId: null,
       flightInfo: null,
       speedMultiplier: 1,
     });

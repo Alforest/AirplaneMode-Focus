@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import PrivacyPolicy from '../shared/PrivacyPolicy';
 import SupportWidget from '../shared/SupportWidget';
 
 // ---------------------------------------------------------------------------
@@ -43,7 +42,7 @@ const FAQ = [
   },
   {
     q: 'Is it free? Do I need an account?',
-    a: 'Completely free, no account, no sign-up. Your flight log is stored only in your own browser.',
+    a: 'Free to use without an account. Your guest flight log stays on this device; optional Google sign-in saves your flights across devices.',
   },
   {
     q: 'Why airplane mode?',
@@ -52,7 +51,6 @@ const FAQ = [
 ];
 
 const HowItWorks: React.FC = () => {
-  const [privacyOpen, setPrivacyOpen] = useState(false);
 
   return (
     <section style={{ background: '#04060c' }} className="px-4 pt-14">
@@ -128,21 +126,23 @@ const HowItWorks: React.FC = () => {
           <span className="font-mono text-muted-white/20 text-xs">
             FocusFlight · study like you're flying
           </span>
-          <nav aria-label="Footer" className="flex items-center gap-3">
+          <nav aria-label="Footer" className="flex flex-wrap justify-center items-center gap-3">
             <a href="#contact" className="font-mono text-muted-white/60 hover:text-gold text-xs uppercase tracking-[0.15em] transition-colors px-2 py-2 focus-visible:outline focus-visible:outline-gold rounded">
               Contact
             </a>
-            <button
-              onClick={() => setPrivacyOpen(true)}
+            <a
+              href="privacy/"
               className="font-mono text-muted-white/60 hover:text-gold text-xs uppercase tracking-[0.15em] transition-colors px-2 py-2 focus-visible:outline focus-visible:outline-gold rounded"
             >
               Privacy
-            </button>
+            </a>
+            <a href="terms/" className="font-mono text-muted-white/60 hover:text-gold text-xs uppercase tracking-[0.15em] transition-colors px-2 py-2 focus-visible:outline focus-visible:outline-gold rounded">
+              Terms
+            </a>
           </nav>
         </footer>
       </div>
 
-      <PrivacyPolicy open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
     </section>
   );
 };

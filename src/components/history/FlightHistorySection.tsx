@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { motion } from 'framer-motion';
 import { useHistoryStore } from '../../store/historyStore';
 import HistoryStats from './HistoryStats';
+import AccountPanel from '../account/AccountPanel';
 import RecentFlights from './RecentFlights';
 
 // Lazy: FlightGlobe pulls mapbox-gl — don't make the landing page pay for it.
@@ -30,6 +31,7 @@ const FlightHistorySection: React.FC = () => {
 
   return (
     <motion.section
+      id="flight-log"
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
@@ -62,6 +64,8 @@ const FlightHistorySection: React.FC = () => {
             </span>
           )}
         </div>
+
+        <AccountPanel />
 
         {/* Globe + Stats row */}
         <div className="flex flex-col md:flex-row gap-4 mb-8">

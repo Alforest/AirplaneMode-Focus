@@ -1,0 +1,28 @@
+:root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; color: #d0d8e8; background: #0a0e1a; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: #f0c040; text-underline-offset: .22em; }
+a:hover { color: #ffe28a; }
+a:focus-visible { outline: 2px solid #f0c040; outline-offset: 5px; border-radius: 2px; }
+.skip-link { position: absolute; left: 1rem; top: -5rem; padding: .8rem; background: #0d1b2a; }
+.skip-link:focus { top: 1rem; }
+header, main, footer { max-width: 850px; margin: auto; padding-left: 24px; padding-right: 24px; }
+header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; padding-top: 32px; padding-bottom: 32px; border-bottom: 1px solid #f0c04026; }
+.brand { font-family: Georgia, serif; font-size: 1.65rem; color: #d0d8e8; text-decoration: none; }
+.brand span { color: #f0c040; }
+nav { display: flex; flex-wrap: wrap; gap: 20px; font-size: .9rem; }
+nav a[aria-current="page"] { color: #d0d8e8; }
+main { padding-top: 52px; padding-bottom: 52px; }
+.eyebrow, .updated { font-family: ui-monospace, monospace; font-size: .8rem; }
+.eyebrow { text-transform: uppercase; letter-spacing: .15em; color: #f0c040; }
+h1 { margin: 12px 0 16px; font-family: Georgia, serif; font-weight: 400; font-size: clamp(2.4rem, 7vw, 3.5rem); line-height: 1.15; }
+.updated { color: #a1adc3; }
+.intro { margin: 32px 0; padding: 24px; border: 1px solid #f0c04026; border-radius: 14px; background: #0d1b2a; }
+h2 { margin: 36px 0 12px; font-size: 1.2rem; font-weight: 600; color: #f0c040; }
+p, li { line-height: 1.8; color: #bcc6d8; overflow-wrap: anywhere; }
+p { margin: 12px 0; }
+li { margin: 8px 0; }
+ul { padding-left: 24px; }
+footer { border-top: 1px solid #f0c04026; padding-top: 24px; padding-bottom: 36px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; font-size: .85rem; }
+@media (max-width: 480px) { header, main, footer { padding-left: 20px; padding-right: 20px; } main { padding-top: 32px; } .intro { padding: 18px; } }
+@media print { :root { color-scheme: light; background: white; color: black; } p, li, h2, a, .updated { color: black; } .intro { background: white; border-color: #aaa; } header, footer { display: none; } main { max-width: none; padding: 0; } }

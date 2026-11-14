@@ -1,3 +1,4 @@
+import { useAccount } from './hooks/useAccount';
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useFlightStore } from './store/flightStore';
@@ -16,6 +17,7 @@ const pageVariants = {
 };
 
 const App: React.FC = () => {
+  useAccount();
   const { phase } = useFlightStore();
   const [contactOpen, setContactOpen] = useState(() => window.location.hash === '#contact');
 
