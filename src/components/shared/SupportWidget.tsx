@@ -1,4 +1,11 @@
 import React from 'react';
+import { track } from '../../lib/analytics';
+
+function trackCoffeeClick(compact: boolean): void {
+  track('coffee_clicked', {
+    placement: compact ? 'flight_completed' : 'homepage_footer',
+  }, { instant: true });
+}
 
 const SupportWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => (
   <aside
@@ -21,6 +28,10 @@ const SupportWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => 
       href="https://www.buymeacoffee.com/alforest"
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => trackCoffeeClick(compact)}
+      onAuxClick={(event) => {
+        if (event.button === 1) trackCoffeeClick(compact);
+      }}
       aria-label="Buy me a coffee (opens in a new tab)"
       className={`inline-flex items-center justify-center gap-2 rounded-xl border border-gold/35 bg-gold/10 px-5 py-3 font-mono text-sm text-gold hover:bg-gold/20 transition-colors shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold ${compact ? 'mt-4' : ''}`}
     >
