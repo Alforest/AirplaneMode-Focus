@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { retryChallengeCompletions } from '../lib/challenge';
 import { supabase } from '../lib/supabase';
 import { syncHistory } from '../lib/historySync';
 import { useAuthStore } from '../store/authStore';
@@ -15,7 +16,7 @@ export function useAccount() {
       useHistoryStore.getState().setOwner(user?.id ?? null);
       useAuthStore.setState({ user, ready: true, error: null, syncStatus: 'idle' });
       // Do not await Supabase API calls inside the auth callback (auth lock).
-      if (user) window.setTimeout(() => { if (active) void syncHistory(); }, 0);
+      if (user) window.setTimeout(() => { if (active) { void syncHistory(); void retryChallengeCompletions(); } }, 0);
     });
     void client.auth.getSession().then(({ error }) => {
       if (active && error) useAuthStore.setState({ ready: true, error: 'Could not restore your account. Please sign in again.' });
@@ -31,7 +32,7 @@ export function useAccount() {
         record.pending && record.revision !== old?.[record.flight.id]?.revision
       )) void syncHistory();
     });
-    const retry = () => { void syncHistory(); };
+    const retry = () => { void syncHistory(); void retryChallengeCompletions(); };
     window.addEventListener('online', retry);
     window.addEventListener('focus', retry);
     const timer = window.setInterval(retry, 30_000);

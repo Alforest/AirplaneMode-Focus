@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { registerChallengeFlight, completeChallengeFlight, invalidateChallengeFlight, forgetChallengeFlight } from '../lib/challenge';
 import { Airport } from '../data/airports';
 import { FlightInfo, buildFlightInfo } from '../utils/generateFlightInfo';
 import { BoardFlight } from '../utils/departureBoard';
@@ -74,17 +75,24 @@ export const useFlightStore = create<FlightState>((set, get) => ({
       ...routeProps(departure, destination, durationMinutes),
       airline: flightInfo?.airline,
     });
-    set({ startTime: Date.now(), sessionId: crypto.randomUUID(), phase: 'tracker' });
+    const sessionId = crypto.randomUUID();
+    set({ startTime: Date.now(), sessionId, phase: 'tracker' });
+    if (get().speedMultiplier === 1) registerChallengeFlight(sessionId, durationMinutes);
   },
   landFlight: () => {
+    if (get().phase !== 'tracker') return;
     const { departure, destination, durationMinutes, flightInfo } = get();
     track('flight_completed', {
       ...routeProps(departure, destination, durationMinutes),
       airline: flightInfo?.airline,
     });
+    const { sessionId, speedMultiplier } = get();
     set({ phase: 'landed' });
+    if (sessionId && speedMultiplier === 1) void completeChallengeFlight(sessionId);
   },
   setSpeedMultiplier: (multiplier) => {
+    const id = get().sessionId;
+    if (id && multiplier !== 1) invalidateChallengeFlight(id);
     // Rebase startTime so virtual elapsed time is continuous across the
     // change — otherwise the new multiplier applies retroactively to all
     // wall time and the plane teleports.
@@ -100,7 +108,8 @@ export const useFlightStore = create<FlightState>((set, get) => ({
   // Deliberately survives reset() so multi-take recordings stay clean
   toggleDevChrome: () => set((s) => ({ devChromeHidden: !s.devChromeHidden })),
   reset: () => {
-    const { phase, departure, destination, durationMinutes, startTime } = get();
+    const { phase, departure, destination, durationMinutes, startTime, sessionId } = get();
+    if (sessionId && phase !== 'landed') forgetChallengeFlight(sessionId);
     if (phase === 'tracker' && startTime) {
       track('flight_abandoned', {
         ...routeProps(departure, destination, durationMinutes),

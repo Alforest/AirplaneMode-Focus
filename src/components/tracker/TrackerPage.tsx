@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 // Lazy: MapView pulls the ~1.7 MB mapbox-gl chunk — keep it off the landing
 // page load (Core Web Vitals) and fetch it only when a flight starts
 const MapView = lazy(() => import('./MapView'));
+import { useChallengeFlight } from '../../lib/challenge';
 import StudyTimer from './StudyTimer';
 import FlightStats from './FlightStats';
 import AdSlot from './AdSlot';
@@ -86,6 +87,8 @@ const ZOOM_LEVELS: { zoom: number | 'fit'; label: string }[] = [
 const TrackerPage: React.FC = () => {
   const { departure, destination, flightInfo } = useFlightStore();
   const isPhone = useIsPhone();
+  const challenge = useChallengeFlight();
+  const sessionId = useFlightStore(state => state.sessionId);
   const [zoomIdx, setZoomIdx] = useState(3); // default: "Country"
   const [zoomOpen, setZoomOpen] = useState(false); // phones: slider collapsed by default
 
@@ -241,6 +244,7 @@ const TrackerPage: React.FC = () => {
 
           {/* Flight stats */}
           <FlightStats />
+          {challenge.id === sessionId && <p role="status" className="text-xs leading-relaxed text-gold/70">{challenge.message}</p>}
 
           {/* Additional info */}
           <div className="glass-card rounded-xl px-4 py-3 text-center">

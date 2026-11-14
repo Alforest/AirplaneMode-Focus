@@ -6,6 +6,7 @@ import CloudBackground from '../shared/CloudBackground';
 import InputForm from './InputForm';
 import DepartureBoard from './DepartureBoard';
 import HowItWorks from './HowItWorks';
+import ChallengeSection, { ChallengeBanner } from '../challenge/ChallengeSection';
 import FlightHistorySection from '../history/FlightHistorySection';
 
 // ---------------------------------------------------------------------------
@@ -146,6 +147,8 @@ const Hero: React.FC = () => {
         </div>
       </div>
 
+      <ChallengeBanner />
+
       {/* Scroll nudge — flight log lives below the fold */}
       <motion.button
         type="button"
@@ -173,6 +176,7 @@ const Hero: React.FC = () => {
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
     </div>
 
+    <ChallengeSection />
     <FlightHistorySection />
     <HowItWorks />
     </>

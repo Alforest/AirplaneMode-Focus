@@ -169,3 +169,67 @@ from `src/legal.css`. GitHub Pages serves them directly, without SPA rewrites or
 JavaScript. They also work under the repository's GitHub Pages subpath. The footer
 and Google sign-in panel link to both pages. Policy text must be kept consistent
 with account, retention, analytics, and advertising behavior when features change.
+
+
+## Pre-Thanksgiving Crunch challenge
+
+The first opt-in community challenge runs November 14 through November 25, 2026,
+ending at **November 26, 00:00 America/New_York** (`2026-11-26T05:00:00Z`).
+The homepage includes a seasonal banner, Google sign-in, public nickname enrollment,
+top 50 leaderboard, personal rank, and final standings after the deadline.
+Equal study totals share a rank. There are no prizes.
+
+### Required database release step
+
+Apply [`supabase/migrations/202611140002_thanksgiving_challenge.sql`](supabase/migrations/202611140002_thanksgiving_challenge.sql)
+once in the existing Supabase project's SQL Editor **before publishing the frontend**.
+No additional environment variables or secret keys are needed. The existing public
+Supabase credentials call restricted database RPCs. Without the migration, the
+leaderboard shows an unavailable state and enrollment cannot proceed.
+
+### Eligibility and scoring
+
+- Sign in and explicitly join with a public nickname before takeoff.
+- Takeoff registers an independent challenge flight using database time. A flight
+  must finish before the deadline, last 1–1,440 whole minutes, and have enough server
+  elapsed time before completion is accepted.
+- Only one active challenge flight per account is allowed, including across tabs and
+  devices. Starting another cancels the previous active challenge flight.
+- Completed flights count once. Imported/edited history never contributes.
+- Accelerating the development timer invalidates that flight's client completion.
+- Be connected at takeoff and landing. Failed completion submissions persist per
+  account and retry on reconnection, window focus, and every 30 seconds while the app
+  is open. Reconnect before the deadline; late submissions are rejected. A small
+  takeoff request delay may mean the first completion request waits for the next retry.
+- Active timers do not resume after reload. Pending landed completions do.
+- Clearing private history does not clear challenge scores. Account deletion cascades
+  to enrollment and challenge flights. Only nicknames, ranks, and totals are public;
+  neither account IDs nor emails nor private routes are exposed by the board RPC.
+- This checks elapsed time and prevents overlapping credit; it does not prove attention
+  or studying and is not intended for prize-bearing competition.
+
+### Challenge validation
+
+The deploy workflow runs `tests/challenge.sql` against disposable PostgreSQL 16 before
+publishing. To run locally, use a **disposable** database with a superuser:
+
+```bash
+psql -v ON_ERROR_STOP=1 -f tests/challenge.sql
+```
+
+The test creates minimal Supabase auth fixtures and rolls everything back. It checks
+nickname rules, enrollment timing, private table permissions, server elapsed time,
+idempotent completion, replacement of overlapping sessions, account isolation,
+shared ranks, deadline enforcement, and anonymous access to final standings.
+
+After applying the migration, verify in a normal browser:
+
+1. Guest: banner links to the leaderboard; empty standings are inviting; Google sign-in
+   remains optional for the study timer.
+2. Sign in, choose a nickname, and join. Confirm nickname/rank/total appear and email
+   does not. A second account cannot claim the same nickname ignoring case.
+3. Complete a real-time flight and wait for the next refresh. Its study minutes count
+   once. Imported guest flights do not alter the score.
+4. Start flights in two tabs. Only the latest active flight can count.
+5. Disconnect at landing, reconnect before the deadline, and confirm one completion.
+6. Check mobile layout and final standings after the deadline.

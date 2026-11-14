@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useFlightStore } from '../../store/flightStore';
 import { useHistoryStore } from '../../store/historyStore';
 import { haversineKm, formatDuration } from '../../utils/flightCalculations';
+import { useChallengeFlight } from '../../lib/challenge';
 import SupportWidget from './SupportWidget';
 
 // Confetti particle
@@ -30,6 +31,7 @@ const CONFETTI_COLORS = ['#f0c040', '#e8a020', '#ffffff', '#d0d8e8', '#7ec8e3', 
 
 const LandedScreen: React.FC = () => {
   const { departure, destination, durationMinutes, flightInfo, sessionId, reset } = useFlightStore();
+  const challenge = useChallengeFlight();
   const addFlight = useHistoryStore(s => s.addFlight);
   const savedRef = useRef(false);
   const [loggedBadge, setLoggedBadge] = useState(false);
@@ -169,6 +171,8 @@ const LandedScreen: React.FC = () => {
             </span>
           </motion.div>
         )}
+
+        {challenge.id === sessionId && <p role="status" className="mt-5 text-sm text-gold/80">{challenge.message}</p>}
 
         {/* CTA */}
         <motion.button

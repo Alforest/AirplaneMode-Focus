@@ -34,6 +34,7 @@
       <li><strong>Guest flight history:</strong> completed routes, airport information, study duration, simulated distance, completion date, flight number, and airline are saved in your browser’s local storage.</li>
       <li><strong>Optional Google account:</strong> when you sign in, Google shares account information such as your account identifier, email address, name, and profile picture with our authentication provider, Supabase. We do not receive your Google password. The current sign-in requests basic identity, email, and profile information, not access to Gmail, Drive, or Calendar.</li>
       <li><strong>Account flight history:</strong> completed flights are associated with your account and stored in Supabase. You can choose to move existing guest flights into your account.</li>
+      <li><strong>Optional study challenges:</strong> if you join, we store your chosen public nickname, enrollment time, and server-recorded flight starts and completions. Your challenge nickname, rank, and total study time are public. Your email, private flight log, and routes are not shown on the leaderboard.</li>
       <li><strong>Usage and technical information:</strong> service providers may process IP addresses, browser and device details, request logs, and identifiers when delivering the site. When analytics is enabled, we collect page views and study events such as flights selected, started, completed, or abandoned, along with route and duration information.</li>
       <li><strong>Messages:</strong> if you email us, we receive your email address and anything you include in your message.</li>
     </ul>
@@ -41,10 +42,10 @@
 
     <h2>2. How information is used</h2>
     <p>We use account information to authenticate you, show your signed-in account, and keep each account’s history separate. We use flight data to display your routes and study totals and synchronize your log across devices. Usage information helps us understand how the timer is used and diagnose problems. We use messages to answer your requests.</p>
-    <p>Your account flight log is private; this version does not publish your history to friends or a leaderboard. We do not use Google account information to personalize advertisements or provide that account information to our analytics integration.</p>
+    <p>Your account flight log is private. Joining a study challenge opts you into a public leaderboard showing your chosen nickname, rank, and challenge study total. Challenge records are separate from private history, and imported history does not contribute to challenge scores. We do not use Google account information to personalize advertisements or provide that account information to our analytics integration.</p>
 
     <h2>3. Local storage and sign-out</h2>
-    <p>The app stores guest history, cached account history, pending sync changes, and authentication session information in browser storage. Account caches are separated by user ID. Signing out returns to the guest log but does not erase cached account history from that device. On a shared device, sign out and clear the site’s browser data when finished.</p>
+    <p>The app stores guest history, cached account history, pending sync changes, pending challenge completions, and authentication session information in browser storage. Account caches are separated by user ID. Signing out returns to the guest log but does not erase cached account history from that device. On a shared device, sign out and clear the site’s browser data when finished.</p>
     <p>Clearing site data removes local copies and may erase unsynced flights. It does not by itself delete history already stored in your account.</p>
 
     <h2>4. Providers and sharing</h2>
@@ -59,7 +60,8 @@
     <p>Information may also be disclosed when required by law or necessary to protect the service, its users, or others. Providers may process information in countries other than your own.</p>
 
     <h2>5. Retention and deletion</h2>
-    <p>Guest history remains on your device until you clear it or your browser removes it. Account history is retained to provide synchronization unless you request deletion or we discontinue the service.</p>
+    <p>Challenge enrollment and scoring records are retained to show final standings until you request deletion or we discontinue the feature. Clearing your private flight log does not remove your challenge score.
+    </p><p>Guest history remains on your device until you clear it or your browser removes it. Account history is retained to provide synchronization unless you request deletion or we discontinue the service.</p>
     <p>Clearing history while signed in hides the flights known to that device across synced devices. Synchronize first to include flights from other devices. The current system retains deleted flight records and deletion markers in cloud storage to prevent stale offline copies from restoring them; clearing the visible log is not full account-data deletion.</p>
     <p>For account and associated cloud-data deletion, email <a href="mailto:admin@focusflight.io">admin@focusflight.io</a> from the address used to sign in. We may need to verify your request. Copies may remain temporarily in provider backups or logs, or where retention is required by law. Clear the site’s browser data on your devices to remove local copies as well.</p>
 
