@@ -317,6 +317,7 @@ Force Land action; test sessions are saved to that guest history.
 
 All custom events carry `experience_version: passport_goals_v1`. Production uses
 our existing PostHog browser identifier; development logs would-be events only.
+Goal-editor and landing-reward exposure events use viewport visibility, not just component mounting.
 No identify call links the analytics identifier to a Google account. These events
 do not send emails, nicknames, account IDs, home-airport codes, or feedback free text.
 Goals remain device-local. Feedback is optional and submitted once per account/guest

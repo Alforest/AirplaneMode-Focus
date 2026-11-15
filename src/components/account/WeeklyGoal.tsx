@@ -1,5 +1,6 @@
 import { track } from '../../lib/analytics';
-import { useEffect, useState } from 'react';
+import { useAnalyticsExposure } from '../../hooks/useAnalyticsExposure';
+import { useState } from 'react';
 import { useWeeklyGoal } from '../../hooks/useWeeklyGoal';
 import { useWeeklyGoalStore } from '../../store/weeklyGoalStore';
 import { useAccountUI } from '../../store/accountUIStore';
@@ -47,8 +48,8 @@ function GoalEditor({ owner, goal }: { owner: string; goal: number | null }) {
 
 export default function WeeklyGoal() {
   const { owner, goal } = useWeeklyGoal();
-  useEffect(() => { track('weekly_goal_editor_viewed', { signed_in: owner !== 'guest', has_weekly_goal: !!useWeeklyGoalStore.getState().goals[owner] }); }, [owner]);
-  return <section aria-labelledby="weekly-goal-title" className="rounded-xl border border-gold/15 p-4 sm:p-5">
+  const exposure = useAnalyticsExposure('weekly_goal_editor_viewed', { signed_in: owner !== 'guest', has_weekly_goal: !!goal }, owner);
+  return <section ref={exposure} aria-labelledby="weekly-goal-title" className="rounded-xl border border-gold/15 p-4 sm:p-5">
     <h3 id="weekly-goal-title" className="font-serif text-xl text-gold">Your weekly flight plan</h3>
     <p id="weekly-goal-help" className="mt-2 text-xs leading-relaxed text-muted-white/60">Pick a little time for yourself, every week. Monday–Sunday in your local time; includes completed and imported flights. Your target repeats each week and is saved on this device for this {owner === 'guest' ? 'guest log' : 'account'}.</p>
     <div className="mt-4"><WeeklyGoalProgress /></div>

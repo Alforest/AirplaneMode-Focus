@@ -1,3 +1,4 @@
+import { useAnalyticsExposure } from '../../hooks/useAnalyticsExposure';
 import { track } from '../../lib/analytics';
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -40,6 +41,8 @@ const LandedScreen: React.FC = () => {
   const owner = useHistoryStore(state => state.owner);
   const [rewards, setRewards] = useState<LandingReward[]>([]);
   const rewardOwner = useRef(owner);
+  const goal = useWeeklyGoalStore(state => state.goals[owner] ?? null);
+  const rewardExposure = useAnalyticsExposure('landing_rewards_viewed', { signed_in: owner !== 'guest', reward_types: rewards.map(item => item.id), reward_count: rewards.length, has_weekly_goal: !!goal }, `${owner}:${sessionId}`, rewards.length > 0 && owner === rewardOwner.current);
   const [loggedBadge, setLoggedBadge] = useState(false);
 
   const particles = useRef(
@@ -75,7 +78,6 @@ const LandedScreen: React.FC = () => {
     const milestones = landingRewards(history.flights, flight, goal);
     setRewards(milestones);
     if (!history.flights.some(item => item.id === sessionId)) {
-      track('landing_rewards_viewed', { signed_in: history.owner !== 'guest', reward_types: milestones.map(item => item.id), reward_count: milestones.length, has_weekly_goal: !!goal });
       if (milestones.some(item => item.id === 'weekly-goal')) track('weekly_goal_achieved', { signed_in: history.owner !== 'guest', goal_minutes: goal });
     }
     addFlight(flight);
@@ -173,7 +175,7 @@ const LandedScreen: React.FC = () => {
         )}
 
         {owner === rewardOwner.current && rewards.length > 0 && <motion.section
-          aria-label="This flight’s milestones" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="mt-6 space-y-3 text-left">
+          ref={rewardExposure} aria-label="This flight’s milestones" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="mt-6 space-y-3 text-left">
           {rewards.map(reward => <div key={reward.id} className="rounded-xl border border-gold/25 bg-gold/5 p-4">
             <p className="font-serif text-lg text-gold"><span aria-hidden="true">✦ </span>{reward.title}</p>
             <p className="mt-1 text-sm leading-relaxed text-muted-white/65">{reward.detail}</p>
