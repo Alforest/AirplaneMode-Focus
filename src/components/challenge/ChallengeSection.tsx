@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ChallengeBoard, challengePhase, studyTime } from '../../lib/challenge';
+import { useChallengeMembership } from '../../store/challengeMembershipStore';
 import { useProfileStore } from '../../store/profileStore';
 import { useAccountUI } from '../../store/accountUIStore';
 import { useAuthStore } from '../../store/authStore';
@@ -8,12 +9,16 @@ import { useAuthStore } from '../../store/authStore';
 const buttonClass = 'rounded-lg border border-gold/30 px-4 py-2 text-sm text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50';
 
 export function ChallengeBanner() {
+  const user = useAuthStore(state => state.user);
+  const ready = useAuthStore(state => state.ready);
+  const membership = useChallengeMembership(state => user ? state.members[user.id] : undefined);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
-  if (!supabase || challengePhase(now) !== 'active') return null;
+  // While restoring/checking an account, avoid briefly prompting existing members.
+  if (!supabase || !ready || challengePhase(now) !== 'active' || (user && membership !== false)) return null;
   return (
     <aside aria-label="Study challenge" className="relative z-10 mx-5 sm:mx-6 mb-20 rounded-xl border border-gold/25 bg-midnight/90 p-4 sm:p-5 lg:mx-auto lg:w-[calc(100%-3rem)] lg:max-w-6xl">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -59,6 +64,7 @@ export default function ChallengeSection() {
         if (failure || !data) throw failure;
         if (active) {
           const value = data as ChallengeBoard;
+          if (user) useChallengeMembership.getState().update(user.id, !!value.me);
           setBoard(value);
           setOffset(Date.parse(value.server_now) - Date.now());
           setError(null);
@@ -100,7 +106,11 @@ export default function ChallengeSection() {
           : failure.code === '23514' && failure.message.includes('nickname_appropriate')
             ? 'Please choose a nickname without profanity or slurs.'
             : 'Could not join the challenge. Check your nickname and try again.');
-      } else { void useProfileStore.getState().load(); setRefresh(value => value + 1); }
+      } else {
+        if (user) useChallengeMembership.getState().update(user.id, true);
+        void useProfileStore.getState().load();
+        setRefresh(value => value + 1);
+      }
     } catch { setError('Could not connect. Please try again.'); }
     finally { setJoining(false); }
   };

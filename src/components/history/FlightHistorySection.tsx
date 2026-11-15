@@ -68,8 +68,6 @@ const FlightHistorySection: React.FC = () => {
           )}
         </div>
 
-        <button type="button" onClick={openAccount} className="mb-6 rounded-lg border border-gold/20 px-4 py-2 text-sm text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">Open your traveler passport →</button>
-
         {/* Globe + Stats row */}
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           {/* Globe */}
@@ -86,6 +84,7 @@ const FlightHistorySection: React.FC = () => {
           {/* Stats */}
           <div className="md:basis-[40%] flex flex-col justify-center gap-3">
             <HistoryStats />
+            <button type="button" onClick={openAccount} className="rounded-lg border border-gold/20 px-4 py-2 text-sm text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">Open your traveler passport →</button>
           </div>
         </div>
 
