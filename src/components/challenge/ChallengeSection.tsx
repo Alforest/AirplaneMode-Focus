@@ -144,7 +144,7 @@ export default function ChallengeSection() {
 
         <div className="mt-8 flex flex-wrap justify-between items-center gap-3">
           <h3 className="font-serif text-xl text-muted-white">{phase === 'ended' ? 'Final leaderboard' : 'Study-time leaderboard'}</h3>
-          <span className="text-xs text-muted-white/60">{board ? `${board.participant_count} ${board.participant_count === 1 ? 'traveler' : 'travelers'} · Top 10` : 'Community standings'}</span>
+          <span className="text-xs text-muted-white/60">Top 10</span>
         </div>
         {loading && <p className="mt-4 text-sm text-muted-white/60" role="status">Loading leaderboard…</p>}
         {(error || authError) && <div className="mt-4 text-sm text-red-300" role="alert">{error || authError} <button type="button" className="underline underline-offset-4" onClick={() => setRefresh(value => value + 1)}>Retry</button></div>}
