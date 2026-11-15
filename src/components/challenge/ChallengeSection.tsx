@@ -141,7 +141,7 @@ export default function ChallengeSection() {
 
         <div className="mt-8 flex flex-wrap justify-between items-center gap-3">
           <h3 className="font-serif text-xl text-muted-white">{phase === 'ended' ? 'Final leaderboard' : 'Study-time leaderboard'}</h3>
-          <span className="text-xs text-muted-white/60">{board ? `${board.participant_count} ${board.participant_count === 1 ? 'traveler' : 'travelers'} · Top 50` : 'Community standings'}</span>
+          <span className="text-xs text-muted-white/60">{board ? `${board.participant_count} ${board.participant_count === 1 ? 'traveler' : 'travelers'} · Top 10` : 'Community standings'}</span>
         </div>
         {loading && <p className="mt-4 text-sm text-muted-white/60" role="status">Loading leaderboard…</p>}
         {(error || authError) && <div className="mt-4 text-sm text-red-300" role="alert">{error || authError} <button type="button" className="underline underline-offset-4" onClick={() => setRefresh(value => value + 1)}>Retry</button></div>}
@@ -150,7 +150,7 @@ export default function ChallengeSection() {
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Challenge rankings by completed study time</caption>
             <thead className="font-mono text-xs text-muted-white/50"><tr><th scope="col" className="py-3 pr-3">Rank</th><th scope="col" className="py-3 pr-3">Traveler</th><th scope="col" className="py-3 text-right">Study time</th></tr></thead>
-            <tbody>{board.entries.map(entry => <tr key={entry.nickname} className={`border-t border-gold/10 ${entry.is_you ? 'bg-gold/5 text-gold' : 'text-muted-white/80'}`}>
+            <tbody>{board.entries.slice(0, 10).map(entry => <tr key={entry.nickname} className={`border-t border-gold/10 ${entry.is_you ? 'bg-gold/5 text-gold' : 'text-muted-white/80'}`}>
               <td className="py-3 pr-3 font-mono">#{entry.position}</td><th scope="row" className="py-3 pr-3 font-normal break-words">{entry.nickname}{entry.is_you && <span className="ml-2 text-xs text-gold">You</span>}</th><td className="py-3 text-right font-mono whitespace-nowrap">{studyTime(entry.minutes)}</td>
             </tr>)}</tbody>
           </table>

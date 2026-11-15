@@ -176,7 +176,7 @@ with account, retention, analytics, and advertising behavior when features chang
 The first opt-in community challenge runs November 14 through November 25, 2026,
 ending at **November 26, 00:00 America/New_York** (`2026-11-26T05:00:00Z`).
 The homepage includes a seasonal banner, Google sign-in, public nickname enrollment,
-top 50 leaderboard, personal rank, and final standings after the deadline.
+top 10 leaderboard, personal rank, and final standings after the deadline.
 Equal study totals share a rank. There are no prizes.
 
 ### Required database release step
