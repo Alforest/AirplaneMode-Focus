@@ -304,3 +304,15 @@ select option {
   border: 1px solid rgba(240, 192, 64, 0.5);
   animation: globe-dot-pulse 2.5s ease-in-out infinite;
 }
+
+.weekly-goal-progress {
+  appearance: none;
+  background: rgba(240, 192, 64, 0.1);
+  border: none;
+}
+.weekly-goal-progress::-webkit-progress-bar { background: rgba(240, 192, 64, 0.1); border-radius: 9999px; }
+.weekly-goal-progress::-webkit-progress-value { background: #f0c040; border-radius: 9999px; transition: width 0.4s ease; }
+.weekly-goal-progress::-moz-progress-bar { background: #f0c040; border-radius: 9999px; }
+@media (prefers-reduced-motion: reduce) {
+  .weekly-goal-progress::-webkit-progress-value { transition: none; }
+}

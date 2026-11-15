@@ -1,9 +1,13 @@
+import { track } from '../../lib/analytics';
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useFlightStore } from '../../store/flightStore';
 import { useHistoryStore } from '../../store/historyStore';
 import { haversineKm, formatDuration } from '../../utils/flightCalculations';
 import { useChallengeFlight } from '../../lib/challenge';
+import { useWeeklyGoalStore } from '../../store/weeklyGoalStore';
+import { landingRewards, LandingReward } from '../../utils/landingRewards';
+import { WeeklyGoalProgress } from '../account/WeeklyGoal';
 import SupportWidget from './SupportWidget';
 
 // Confetti particle
@@ -33,7 +37,9 @@ const LandedScreen: React.FC = () => {
   const { departure, destination, durationMinutes, flightInfo, sessionId, reset } = useFlightStore();
   const challenge = useChallengeFlight();
   const addFlight = useHistoryStore(s => s.addFlight);
-  const savedRef = useRef(false);
+  const owner = useHistoryStore(state => state.owner);
+  const [rewards, setRewards] = useState<LandingReward[]>([]);
+  const rewardOwner = useRef(owner);
   const [loggedBadge, setLoggedBadge] = useState(false);
 
   const particles = useRef(
@@ -52,23 +58,33 @@ const LandedScreen: React.FC = () => {
 
   // Save flight to history once on mount
   useEffect(() => {
-    if (savedRef.current || !sessionId || !departure || !destination || !flightInfo) return;
-    savedRef.current = true;
-    addFlight({
+    if (!sessionId || !departure || !destination || !flightInfo) return;
+    const history = useHistoryStore.getState();
+    rewardOwner.current = history.owner;
+    const flight = {
       id: sessionId,
       departure: { iata: departure.iata, city: departure.city, country: departure.country, lat: departure.lat, lon: departure.lon },
       destination: { iata: destination.iata, city: destination.city, country: destination.country, lat: destination.lat, lon: destination.lon },
       durationMinutes,
       distanceKm: totalDistKm,
-      date: new Date().toISOString(),
+      date: history.flights.find(item => item.id === sessionId)?.date ?? new Date().toISOString(),
       flightNumber: flightInfo.flightNumber,
       airline: flightInfo.airline,
-    });
-    setTimeout(() => setLoggedBadge(true), 1500);
+    };
+    const goal = useWeeklyGoalStore.getState().goals[history.owner] ?? null;
+    const milestones = landingRewards(history.flights, flight, goal);
+    setRewards(milestones);
+    if (!history.flights.some(item => item.id === sessionId)) {
+      track('landing_rewards_viewed', { signed_in: history.owner !== 'guest', reward_types: milestones.map(item => item.id), reward_count: milestones.length, has_weekly_goal: !!goal });
+      if (milestones.some(item => item.id === 'weekly-goal')) track('weekly_goal_achieved', { signed_in: history.owner !== 'guest', goal_minutes: goal });
+    }
+    addFlight(flight);
+    const timer = window.setTimeout(() => setLoggedBadge(true), 1500);
+    return () => window.clearTimeout(timer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="fixed inset-0 bg-navy z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden">
+    <div className="fixed inset-0 bg-navy z-50 flex items-start justify-center overflow-y-auto overflow-x-hidden">
       {/* Confetti */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {particles.current.map(p => (
@@ -80,7 +96,7 @@ const LandedScreen: React.FC = () => {
       <div className="stars-container absolute inset-0 opacity-60" />
 
       {/* Content */}
-      <div className="relative z-10 text-center max-w-xl mx-auto px-5 sm:px-6 py-10 my-auto">
+      <div className="relative z-10 text-center w-full max-w-xl shrink-0 mx-auto px-5 sm:px-6 py-10 my-auto">
         {/* Plane icon */}
         <motion.div
           initial={{ scale: 0, rotate: -45 }}
@@ -155,6 +171,15 @@ const LandedScreen: React.FC = () => {
             {departure.iata} → {destination.iata} &nbsp;·&nbsp; {flightInfo?.airline}
           </motion.div>
         )}
+
+        {owner === rewardOwner.current && rewards.length > 0 && <motion.section
+          aria-label="This flight’s milestones" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="mt-6 space-y-3 text-left">
+          {rewards.map(reward => <div key={reward.id} className="rounded-xl border border-gold/25 bg-gold/5 p-4">
+            <p className="font-serif text-lg text-gold"><span aria-hidden="true">✦ </span>{reward.title}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-white/65">{reward.detail}</p>
+          </div>)}
+          <WeeklyGoalProgress />
+        </motion.section>}
 
         {/* Flight log badge */}
         {loggedBadge && (

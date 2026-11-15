@@ -1,3 +1,4 @@
+import { track } from '../lib/analytics';
 import { create } from 'zustand';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
@@ -21,6 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   signIn: async () => {
     if (!supabase) return;
     set({ busy: true, error: null });
+    track('sign_in_requested', { provider: 'google' }, { instant: true });
     try {
       try { sessionStorage.setItem('focusflight-open-account', '1'); } catch { /* Optional return-to-account hint. */ }
       const { error } = await supabase.auth.signInWithOAuth({
@@ -30,6 +32,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (error) throw error;
     } catch {
       try { sessionStorage.removeItem('focusflight-open-account'); } catch { /* Optional hint. */ }
+      track('sign_in_failed', { provider: 'google' });
       set({ error: 'Google sign-in failed. Please try again.' });
     } finally {
       set({ busy: false });

@@ -84,7 +84,7 @@ const FlightHistorySection: React.FC = () => {
           {/* Stats */}
           <div className="md:basis-[40%] flex flex-col justify-center gap-3">
             <HistoryStats />
-            <button type="button" onClick={openAccount} className="rounded-lg border border-gold/20 px-4 py-2 text-sm text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">Open your traveler passport →</button>
+            <button type="button" onClick={() => openAccount('flight_log')} className="rounded-lg border border-gold/20 px-4 py-2 text-sm text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">Open your traveler passport →</button>
           </div>
         </div>
 

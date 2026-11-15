@@ -1,3 +1,4 @@
+import { track } from '../lib/analytics';
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 
@@ -44,16 +45,19 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   save: async (nickname, homeAirport) => {
     const { owner, saving } = get();
     if (!owner || !supabase || saving) return false;
+    const previous = get().profile;
+    track('profile_save_started', { signed_in: true, is_new_profile: !previous });
     const version = ++generation;
     set({ saving: true, error: null });
     try {
       const { data, error } = await supabase.rpc('save_study_profile', { p_nickname: nickname.trim(), p_home_airport: homeAirport || null });
       if (get().owner !== owner || generation !== version) return false;
-      if (error) { set({ error: profileError(error.code, error.message), saving: false }); return false; }
+      if (error) { track('profile_save_failed', { signed_in: true, error_code: error.code }); set({ error: profileError(error.code, error.message), saving: false }); return false; }
+      track('profile_saved', { signed_in: true, is_new_profile: !previous, nickname_changed: previous?.nickname !== nickname.trim(), home_airport_changed: (previous?.home_airport ?? null) !== (homeAirport || null), has_home_airport: !!homeAirport });
       set({ profile: data as TravelerProfile, saving: false, loading: false, error: null });
       return true;
     } catch {
-      if (get().owner === owner && generation === version) set({ saving: false, error: profileError() });
+      if (get().owner === owner && generation === version) { track('profile_save_failed', { signed_in: true, error_code: 'connection' }); set({ saving: false, error: profileError() }); }
       return false;
     }
   },

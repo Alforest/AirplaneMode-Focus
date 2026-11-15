@@ -284,3 +284,72 @@ Browser release checks: open/close passport by mouse, Escape and keyboard; sign 
 and verify passport returns; edit/save nickname and home airport; reload and sign in
 on another device; verify the departure default and challenge name; switch accounts
 and verify no identity or stats mix; check the dialog at phone width.
+
+
+## Local weekly goals and landing rewards
+
+The traveler passport has a weekly study target (2h, 5h, 10h presets or half-hour
+increments from 0.5h to 168h). Targets repeat each week; progress uses completed
+flight history from Monday 00:00 in local time, including imported flights.
+The homepage and landing screen show progress, remaining time, and a completed state.
+No target is chosen automatically. Removing a target preserves flight history.
+
+This version stores targets only in `focusflight-weekly-goals-v1` browser storage,
+separated by account ID and guest mode. It does not modify the live database or sync
+targets across devices. Clearing site data removes targets. Flights still use the
+existing configured history sync. A preview flight therefore affects real history
+if you are signed in; use guest mode when experimenting with the development timer.
+
+Landing cards recognize a weekly target crossed by this flight, first flight, new
+country, a strictly longer personal best, and an extended study streak. Up to three
+milestones appear; a normal session still gets a positive acknowledgment. The just-
+saved flight is excluded from historical comparisons so rendering it again cannot
+double count its time. These are private motivational summaries, not leaderboard
+scores or persistent collectible badges.
+
+Run `npm run test:goals` for persistence/account isolation, target validation, week
+boundaries, deduplicated landing comparisons, and milestone rules. To preview a
+landing quickly on localhost, use guest mode and the existing development toolbar's
+Force Land action; test sessions are saved to that guest history.
+
+
+## Passport / weekly-goal analytics
+
+All custom events carry `experience_version: passport_goals_v1`. Production uses
+our existing PostHog browser identifier; development logs would-be events only.
+No identify call links the analytics identifier to a Google account. These events
+do not send emails, nicknames, account IDs, home-airport codes, or feedback free text.
+Goals remain device-local. Feedback is optional and submitted once per account/guest
+on this browser for this experience version; only positive/negative is sent.
+
+| Event | Properties / meaning |
+| --- | --- |
+| `account_opened` | `source`, `signed_in`, `has_profile`, `has_weekly_goal`; once per closed→open transition |
+| `account_closed` | Same context plus `reason`, `duration_seconds`; explicit dialog closes only |
+| `sign_in_requested` / `sign_in_completed` / `sign_in_failed` | Google redirect request, successful return, or locally reported error; request uses immediate beacon |
+| `personal_stats_viewed` | `signed_in`, `surface=passport`; signed-in stats rendered in open dialog |
+| `profile_save_started` / `profile_saved` / `profile_save_failed` | `is_new_profile`; success adds `nickname_changed`, `home_airport_changed`, `has_home_airport`; failure adds error code only |
+| `weekly_goal_editor_viewed` | `signed_in`, `has_weekly_goal` |
+| `weekly_goal_saved` | `goal_minutes`, `previous_goal_minutes`, `is_new_goal`, `signed_in`; only after successful local save |
+| `weekly_goal_removed` | `previous_goal_minutes`, `signed_in` |
+| `weekly_goal_save_failed` | `signed_in`, optional removal action |
+| `landing_rewards_viewed` | `reward_types` (fixed milestone IDs), `reward_count`, `has_weekly_goal`, `signed_in`; no reward text |
+| `weekly_goal_achieved` | `goal_minutes`, `signed_in`; a completed flight crosses its weekly target |
+| `account_feedback_submitted` | `rating=positive/negative`, `surface=passport`, `signed_in` |
+
+`flight_started`, `flight_completed`, and `flight_abandoned` also include `signed_in`,
+`has_weekly_goal`, and `goal_minutes` for engagement comparisons. Existing route data
+on flight events is unchanged. `account_opened.source` is one of `homepage_header`,
+`departures_header`, `flight_log`, `welcome`, `goal_prompt`, `challenge_profile`,
+`oauth_return`, or `unknown`. Exclude `oauth_return` when measuring manual discovery.
+
+Suggested dashboard: daily unique browser visitors and account openers; opener share
+of visitors; opening sources; account→profile-save and goal-editor→goal-save funnels;
+sign-in funnel; home-airport adoption; saved goal distribution; goal achievements;
+positive/negative feedback with response count; and D1/D7 completed-flight retention
+for goal savers versus other study users. Show save failures as a quality metric.
+Use the experience-version filter for custom events, but not the automatic `$pageview`
+denominator (it does not carry that property). Start the window at this deployment.
+Repeat use and time in a dialog are engagement signals, not satisfaction or causal
+proof. Feedback is a voluntary sample. Anonymous browser IDs do not deduplicate
+across devices or shared-browser accounts. Do not treat them as known accounts.

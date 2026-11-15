@@ -211,7 +211,7 @@ const DeparturesBoard: React.FC = () => {
     <div style={{ background: '#06080f' }} className="min-h-screen py-7 sm:py-14 px-3 sm:px-4">
       <div style={{ maxWidth: 960 }} className="mx-auto">
 
-        <div className="mb-4 flex items-center justify-between gap-3"><p className="text-sm text-gold/70">{nickname ? `Where to next, ${nickname}?` : 'Your next focus session awaits.'}</p><AccountButton /></div>
+        <div className="mb-4 flex items-center justify-between gap-3"><p className="text-sm text-gold/70">{nickname ? `Where to next, ${nickname}?` : 'Your next focus session awaits.'}</p><AccountButton source="departures_header" /></div>
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-2">

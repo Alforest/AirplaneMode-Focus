@@ -37,12 +37,12 @@ export function track(
   if (!enabled) {
     // Dev builds send nothing, but log the would-be event so payloads are
     // verifiable in the console
-    if (import.meta.env.DEV) console.debug('[analytics]', event, props);
+    if (import.meta.env?.DEV) console.debug('[analytics]', event, props);
     return;
   }
   // instant: bypass the batch queue (~3s flush) — required for events fired
   // during pagehide, where the queued batch would die with the page
-  posthog.capture(event, props, opts?.instant ? { transport: 'sendBeacon', send_instantly: true } : undefined);
+  posthog.capture(event, { experience_version: 'passport_goals_v1', ...props }, opts?.instant ? { transport: 'sendBeacon', send_instantly: true } : undefined);
 }
 
 // ---------------------------------------------------------------------------

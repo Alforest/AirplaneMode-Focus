@@ -10,7 +10,8 @@
     "data:airports": "tsx scripts/buildAirports.ts",
     "data:routes": "tsx scripts/buildAirlineRoutes.ts",
     "test:history": "tsx --test tests/history.test.ts",
-    "test:stats": "tsx --test tests/personalStats.test.ts"
+    "test:stats": "tsx --test tests/personalStats.test.ts",
+    "test:goals": "tsx --test tests/weeklyGoals.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

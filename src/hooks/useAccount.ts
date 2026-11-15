@@ -1,3 +1,4 @@
+import { track } from '../lib/analytics';
 import { useProfileStore } from '../store/profileStore';
 import { useAccountUI } from '../store/accountUIStore';
 import { useEffect } from 'react';
@@ -12,12 +13,18 @@ export function useAccount() {
     const client = supabase;
     if (!client) return;
     let active = true;
+    let loginRequested = false;
     const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
       const user = session?.user ?? null;
       useProfileStore.getState().setOwner(user?.id ?? null);
       useHistoryStore.getState().setOwner(user?.id ?? null);
       useAuthStore.setState({ user, ready: true, error: null, syncStatus: 'idle' });
+      if (user && loginRequested) {
+        track('sign_in_completed', { provider: 'google', signed_in: true });
+        loginRequested = false;
+        useAccountUI.getState().open('oauth_return');
+      }
       // Do not await Supabase API calls inside the auth callback (auth lock).
       if (user) window.setTimeout(() => { if (active) { void syncHistory(); void retryChallengeCompletions(); void useProfileStore.getState().load(); } }, 0);
     });
@@ -28,8 +35,8 @@ export function useAccount() {
     });
     try {
       if (sessionStorage.getItem('focusflight-open-account') === '1') {
+        loginRequested = true;
         sessionStorage.removeItem('focusflight-open-account');
-        useAccountUI.getState().open();
       }
     } catch { /* Sign-in works even without session storage. */ }
     const unsubscribeHistory = useHistoryStore.subscribe((state, previous) => {

@@ -1,9 +1,18 @@
+import { useAuthStore } from './authStore';
+import { useHistoryStore } from './historyStore';
+import { useWeeklyGoalStore } from './weeklyGoalStore';
 import { create } from 'zustand';
 import { registerChallengeFlight, completeChallengeFlight, invalidateChallengeFlight, forgetChallengeFlight } from '../lib/challenge';
 import { Airport } from '../data/airports';
 import { FlightInfo, buildFlightInfo } from '../utils/generateFlightInfo';
 import { BoardFlight } from '../utils/departureBoard';
 import { track, routeProps } from '../lib/analytics';
+
+function engagementProps() {
+  const owner = useHistoryStore.getState().owner;
+  const goal = useWeeklyGoalStore.getState().goals[owner];
+  return { signed_in: !!useAuthStore.getState().user, has_weekly_goal: !!goal, goal_minutes: goal ?? null };
+}
 
 export type Phase = 'landing' | 'departures' | 'boarding' | 'tracker' | 'landed';
 
@@ -72,6 +81,7 @@ export const useFlightStore = create<FlightState>((set, get) => ({
   startFlight: () => {
     const { departure, destination, durationMinutes, flightInfo } = get();
     track('flight_started', {
+      ...engagementProps(),
       ...routeProps(departure, destination, durationMinutes),
       airline: flightInfo?.airline,
     });
@@ -83,6 +93,7 @@ export const useFlightStore = create<FlightState>((set, get) => ({
     if (get().phase !== 'tracker') return;
     const { departure, destination, durationMinutes, flightInfo } = get();
     track('flight_completed', {
+      ...engagementProps(),
       ...routeProps(departure, destination, durationMinutes),
       airline: flightInfo?.airline,
     });
@@ -112,6 +123,7 @@ export const useFlightStore = create<FlightState>((set, get) => ({
     if (sessionId && phase !== 'landed') forgetChallengeFlight(sessionId);
     if (phase === 'tracker' && startTime) {
       track('flight_abandoned', {
+        ...engagementProps(),
         ...routeProps(departure, destination, durationMinutes),
         elapsed_minutes: Math.round((Date.now() - startTime) / 60000),
         via: 'reset',
