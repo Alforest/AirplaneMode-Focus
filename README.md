@@ -247,3 +247,40 @@ including writes that bypass the UI. Signup displays a specific moderation error
 The SQL integration tests cover bypass attempts and innocent-name regressions.
 This is a curated English filter, not comprehensive multilingual moderation;
 new spellings may need additions to the validator in a later migration.
+
+
+## Traveler passport and profiles
+
+Account/Sign in now opens a native modal dialog instead of scrolling to the flight
+log. The dialog contains Google sign-in, sync/import controls, profile editing,
+and private stats (all-time and current-week study time, flights, streak, longest
+session, and unique destinations). Escape, close, outside click, keyboard focus
+containment, focus restoration, and page scroll locking use the native dialog.
+After Google sign-in the app reopens the passport when session storage is available.
+
+Apply `supabase/migrations/202611150002_traveler_profiles.sql` after the nickname
+moderation migration and before deploying this frontend. It creates private profiles,
+a server-side airport-code registry from the local airport dataset, and a validated
+save RPC. Existing challenge nicknames become profile nicknames. Nicknames are unique
+ignoring case, use the existing profanity validator, and update challenge names in
+the same transaction without changing enrollment times or scores. Saving a profile
+does not enroll the account in a challenge. Old clients' join requests also use the
+saved profile identity. Home airports remain private and must exist in the registry.
+
+Profiles load on sign-in and refresh on focus, reconnection, and the existing 30-second
+retry timer. Late responses cannot overwrite another account's profile or a newer
+save. Profiles are not separately persisted to browser storage; failed saves show an
+error and retain the form for retry. Signing out clears the profile UI. A saved home
+airport pre-fills the departure box without replacing something the user has already
+typed. A visible home-airport shortcut lets them return to their default. Greetings
+and account access appear on both the homepage and the departures board.
+
+`npm run test:stats` covers week boundaries, streaks, repeated flights, year boundaries,
+and totals. `tests/challenge.sql` also checks private profile reads, validated writes,
+moderation, real airport validation, optional home-airport clearing, challenge identity
+consistency, score preservation, and account-deletion cascading.
+
+Browser release checks: open/close passport by mouse, Escape and keyboard; sign in
+and verify passport returns; edit/save nickname and home airport; reload and sign in
+on another device; verify the departure default and challenge name; switch accounts
+and verify no identity or stats mix; check the dialog at phone width.

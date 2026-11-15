@@ -1,3 +1,4 @@
+import AccountDialog from './components/account/AccountDialog';
 import { useAccount } from './hooks/useAccount';
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -84,6 +85,8 @@ const App: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AccountDialog />
 
       {/* Dev toolbar — only in development */}
       {import.meta.env.DEV && <DevToolbar />}

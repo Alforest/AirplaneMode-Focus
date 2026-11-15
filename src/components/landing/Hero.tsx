@@ -1,5 +1,6 @@
 import { useAuthStore } from '../../store/authStore';
-import { supabase } from '../../lib/supabase';
+import AccountButton from '../account/AccountButton';
+import PersonalWelcome from '../account/PersonalWelcome';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import CloudBackground from '../shared/CloudBackground';
@@ -43,7 +44,7 @@ const Clock: React.FC = () => {
 };
 
 const Hero: React.FC = () => {
-  const signedIn = useAuthStore(state => !!state.user);
+  const accountId = useAuthStore(state => state.user?.id);
   return (
     <>
     <div className="relative min-h-screen bg-navy overflow-hidden flex flex-col">
@@ -87,7 +88,7 @@ const Hero: React.FC = () => {
               fill="#f0c040"
             />
           </svg>
-          <span className="font-serif text-2xl text-muted-white leading-none">
+          <span className="font-serif text-xl sm:text-2xl text-muted-white leading-none">
             Focus<span className="text-gold">Flight</span><span className="text-muted-white/35">.io</span>
           </span>
         </div>
@@ -95,9 +96,8 @@ const Hero: React.FC = () => {
           <span className="hidden sm:block font-mono text-xs tracking-[0.2em] uppercase text-muted-white/30">
             Terminal 1
           </span>
-          <button type="button" onClick={() => document.getElementById('flight-log')?.scrollIntoView({ behavior: 'smooth' })}
-            className="font-mono text-xs text-gold/70 hover:text-gold">{supabase ? signedIn ? 'Account' : 'Sign in' : 'Flight log'}</button>
-          <Clock />
+          <AccountButton />
+          <span className="hidden sm:inline-flex"><Clock /></span>
         </div>
       </motion.header>
 
@@ -107,6 +107,7 @@ const Hero: React.FC = () => {
 
           {/* Left — headline + check-in */}
           <div>
+            <PersonalWelcome />
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -131,7 +132,7 @@ const Hero: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.55 }}
             >
-              <InputForm />
+              <InputForm key={accountId ?? 'guest'} />
             </motion.div>
           </div>
 

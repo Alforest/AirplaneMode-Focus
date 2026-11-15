@@ -17,7 +17,7 @@ export default function AccountPanel() {
     <div className="mb-8 rounded-xl border border-gold/15 bg-midnight p-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
-          <h3 className="font-serif text-xl text-muted-white">{user ? 'Your flight log, everywhere.' : 'Take your flight log with you.'}</h3>
+          <h3 className="font-serif text-xl text-muted-white">{user ? 'Account & sync' : 'Your passport starts with a sign-in.'}</h3>
           <p className="mt-1 text-sm text-muted-white/60 break-words">
             {!ready ? 'Checking your account…' : user
               ? `Signed in as ${user.email ?? 'a Google account'}`

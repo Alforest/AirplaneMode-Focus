@@ -2,7 +2,8 @@ import React, { Suspense, lazy } from 'react';
 import { motion } from 'framer-motion';
 import { useHistoryStore } from '../../store/historyStore';
 import HistoryStats from './HistoryStats';
-import AccountPanel from '../account/AccountPanel';
+import { useAccountUI } from '../../store/accountUIStore';
+import { useProfileStore } from '../../store/profileStore';
 import RecentFlights from './RecentFlights';
 
 // Lazy: FlightGlobe pulls mapbox-gl — don't make the landing page pay for it.
@@ -28,6 +29,8 @@ const GlobeEmptyState: React.FC = () => (
 
 const FlightHistorySection: React.FC = () => {
   const flights = useHistoryStore(s => s.flights);
+  const nickname = useProfileStore(state => state.profile?.nickname);
+  const openAccount = useAccountUI(state => state.open);
 
   return (
     <motion.section
@@ -50,7 +53,7 @@ const FlightHistorySection: React.FC = () => {
             letterSpacing: '0.2em',
             textTransform: 'uppercase',
           }}>
-            Your Flight Log
+            {nickname ? `${nickname}’s Flight Log` : 'Your Flight Log'}
           </h2>
           <div className="flex-1 h-px" style={{ background: 'rgba(240,192,64,0.08)' }} />
           {flights.length > 0 && (
@@ -65,7 +68,7 @@ const FlightHistorySection: React.FC = () => {
           )}
         </div>
 
-        <AccountPanel />
+        <button type="button" onClick={openAccount} className="mb-6 rounded-lg border border-gold/20 px-4 py-2 text-sm text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">Open your traveler passport →</button>
 
         {/* Globe + Stats row */}
         <div className="flex flex-col md:flex-row gap-4 mb-8">

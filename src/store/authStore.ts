@@ -22,12 +22,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (!supabase) return;
     set({ busy: true, error: null });
     try {
+      try { sessionStorage.setItem('focusflight-open-account', '1'); } catch { /* Optional return-to-account hint. */ }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: window.location.origin + window.location.pathname },
       });
       if (error) throw error;
     } catch {
+      try { sessionStorage.removeItem('focusflight-open-account'); } catch { /* Optional hint. */ }
       set({ error: 'Google sign-in failed. Please try again.' });
     } finally {
       set({ busy: false });

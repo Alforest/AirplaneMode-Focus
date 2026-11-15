@@ -1,0 +1,230 @@
+-- Private traveler profiles. Nicknames become public only through opt-in challenges.
+create table public.profile_airports (iata text primary key);
+alter table public.profile_airports enable row level security;
+revoke all on public.profile_airports from anon, authenticated;
+-- Airport codes from the same local OurAirports dataset used by the app.
+insert into public.profile_airports(iata) select unnest(array[
+  'AAA','AAC','AAE','AAL','AAN','AAP','AAQ','AAR','AAT','AAX','AAY','ABA','ABB','ABD','ABE','ABI','ABJ','ABK','ABL','ABQ',
+  'ABR','ABS','ABT','ABV','ABX','ABY','ABZ','ACA','ACC','ACE','ACH','ACI','ACK','ACT','ACV','ACX','ACY','ADA','ADB','ADD',
+  'ADE','ADF','ADJ','ADK','ADL','ADQ','ADU','ADZ','AEB','AEH','AEP','AER','AES','AEU','AEX','AEY','AFA','AFL','AFZ','AGA',
+  'AGH','AGP','AGR','AGS','AGT','AGU','AGX','AHA','AHB','AHE','AHO','AIA','AIN','AJA','AJF','AJI','AJL','AJN','AJR','AJU',
+  'AKF','AKJ','AKL','AKN','AKP','AKR','AKU','AKX','AKY','ALA','ALB','ALC','ALF','ALG','ALH','ALO','ALP','ALS','ALW','AMA',
+  'AMD','AMH','AMM','AMQ','AMS','AMV','ANC','ANF','ANI','ANR','ANU','ANV','ANX','AOE','AOG','AOI','AOJ','AOK','AOO','AOR',
+  'APL','APN','APO','APW','AQA','AQG','AQI','AQJ','AQP','ARC','ARH','ARI','ARK','ARM','ARN','ART','ARU','ARW','ASB','ASD',
+  'ASE','ASF','ASI','ASJ','ASM','ASO','ASP','ASR','ASU','ASV','ASW','ATC','ATH','ATK','ATL','ATM','ATQ','ATW','ATY','ATZ',
+  'AUA','AUC','AUG','AUH','AUQ','AUR','AUS','AUX','AVA','AVK','AVL','AVN','AVP','AVV','AWA','AWK','AWZ','AXA','AXD','AXF',
+  'AXJ','AXM','AXP','AXR','AXT','AXU','AYJ','AYP','AYQ','AYT','AZA','AZD','AZN','AZO','AZR','AZS','BAH','BAL','BAQ','BAR',
+  'BAV','BAX','BAY','BBA','BBI','BBK','BBM','BBN','BBO','BBQ','BBU','BCA','BCD','BCH','BCI','BCM','BCN','BCO','BCU','BDA',
+  'BDB','BDH','BDJ','BDL','BDO','BDQ','BDS','BDT','BDU','BEB','BED','BEF','BEG','BEJ','BEK','BEL','BEM','BEN','BER','BES',
+  'BET','BEU','BEW','BEY','BFD','BFF','BFI','BFJ','BFL','BFN','BFS','BFV','BFY','BGA','BGC','BGF','BGI','BGM','BGO','BGR',
+  'BGW','BGY','BHB','BHD','BHE','BHH','BHI','BHJ','BHK','BHM','BHO','BHQ','BHS','BHU','BHV','BHX','BHY','BIA','BIH','BIK',
+  'BIL','BIM','BIO','BIQ','BIR','BIS','BJA','BJB','BJC','BJF','BJL','BJM','BJR','BJV','BJX','BJZ','BKG','BKI','BKK','BKN',
+  'BKO','BKQ','BKS','BKW','BLA','BLD','BLE','BLI','BLJ','BLL','BLQ','BLR','BLV','BLZ','BMA','BME','BMI','BMU','BMV','BMW',
+  'BNA','BND','BNE','BNI','BNK','BNN','BNS','BNX','BOB','BOC','BOD','BOG','BOH','BOI','BOJ','BOM','BON','BOO','BOR','BOS',
+  'BOY','BPE','BPL','BPN','BPS','BPT','BPX','BPY','BQK','BQL','BQN','BQS','BQT','BQU','BRC','BRD','BRE','BRI','BRK','BRL',
+  'BRM','BRN','BRO','BRQ','BRR','BRS','BRU','BRW','BRX','BSA','BSB','BSC','BSD','BSG','BSK','BSL','BSO','BSR','BSZ','BTC',
+  'BTH','BTI','BTJ','BTK','BTM','BTR','BTS','BTU','BTV','BUA','BUD','BUF','BUN','BUQ','BUR','BUS','BUX','BUZ','BVA','BVB',
+  'BVC','BVE','BVG','BVH','BVI','BVJ','BWA','BWI','BWK','BWN','BWO','BWT','BXH','BXR','BXU','BXY','BYK','BYM','BYN','BZE',
+  'BZG','BZI','BZK','BZL','BZN','BZO','BZR','BZV','BZX','CAB','CAC','CAE','CAG','CAH','CAI','CAJ','CAK','CAL','CAN','CAP',
+  'CAT','CAW','CAY','CAZ','CBB','CBH','CBO','CBQ','CBR','CBT','CCC','CCE','CCF','CCJ','CCK','CCM','CCP','CCR','CCS','CCU',
+  'CCZ','CDB','CDC','CDE','CDG','CDP','CDR','CDT','CDV','CEB','CEC','CED','CEE','CEI','CEK','CEN','CEZ','CFE','CFG','CFK',
+  'CFN','CFR','CFS','CFU','CGB','CGD','CGH','CGI','CGK','CGM','CGN','CGO','CGP','CGQ','CGR','CGY','CHA','CHC','CHG','CHH',
+  'CHM','CHO','CHQ','CHS','CHT','CHX','CIA','CID','CIF','CIJ','CIT','CIU','CIW','CIX','CIY','CJA','CJB','CJC','CJJ','CJL',
+  'CJM','CJS','CJU','CKB','CKG','CKH','CKS','CKY','CKZ','CLD','CLE','CLJ','CLL','CLO','CLQ','CLT','CLY','CMA','CMB','CME',
+  'CMF','CMG','CMH','CMI','CMN','CMU','CMW','CMX','CNB','CND','CNF','CNJ','CNM','CNN','CNP','CNQ','CNS','CNX','CNY','COD',
+  'COK','COO','COQ','COR','COS','COU','COV','CPC','CPD','CPE','CPH','CPO','CPR','CPT','CPV','CPX','CQW','CRA','CRD','CRI',
+  'CRK','CRL','CRM','CRP','CRV','CRW','CRZ','CSG','CSK','CSW','CSX','CSY','CTA','CTC','CTD','CTG','CTL','CTM','CTN','CTS',
+  'CTU','CUC','CUE','CUF','CUK','CUL','CUM','CUN','CUP','CUQ','CUR','CUU','CUZ','CVG','CVM','CVN','CVQ','CWA','CWB','CWC',
+  'CWJ','CWL','CXB','CXI','CXJ','CXP','CXR','CYA','CYB','CYC','CYI','CYO','CYP','CYS','CYX','CYZ','CZE','CZH','CZL','CZM',
+  'CZS','CZU','CZX','DAB','DAC','DAD','DAL','DAM','DAR','DAT','DAU','DAV','DAY','DBB','DBC','DBO','DBQ','DBR','DBV','DCA',
+  'DCF','DCM','DCY','DDC','DDG','DDR','DEA','DEB','DEC','DED','DEF','DEL','DEN','DFW','DGA','DGO','DGT','DHM','DHN','DHX',
+  'DIA','DIB','DIE','DIG','DIJ','DIK','DIL','DIN','DIR','DIY','DJE','DJG','DJJ','DKA','DKR','DLA','DLC','DLE','DLG','DLH',
+  'DLI','DLM','DLU','DLZ','DMB','DME','DMK','DMM','DMU','DND','DNH','DNK','DNR','DNZ','DOD','DOG','DOH','DOL','DOM','DOV',
+  'DOY','DPL','DPO','DPS','DQM','DRG','DRO','DRP','DRS','DRW','DSI','DSM','DSN','DSO','DSS','DSY','DTM','DTU','DTW','DUB',
+  'DUD','DUE','DUJ','DUM','DUR','DUS','DUT','DVL','DVO','DWC','DWD','DXB','DYG','DYR','DYU','DZA','DZH','DZN','EAM','EAR',
+  'EAS','EAT','EAU','EBA','EBB','EBD','EBJ','EBL','ECN','ECP','EDI','EDL','EDO','EFL','EGC','EGE','EGO','EGS','EGX','EHU',
+  'EIE','EIN','EIS','EJA','EJH','EKO','ELC','ELD','ELF','ELG','ELH','ELM','ELP','ELQ','ELS','ELU','EMA','EMD','EMK','ENA',
+  'ENF','ENH','ENO','ENU','ENY','EOH','EOI','EPR','EPU','EQS','ERC','ERF','ERH','ERI','ERL','ERS','ERZ','ESB','ESC','ESD',
+  'ESL','ESM','ESR','ESU','ETM','ETR','ETZ','EUG','EUN','EUX','EVE','EVN','EVV','EWB','EWN','EWR','EXT','EYK','EYP','EYW',
+  'EZE','EZS','FAE','FAI','FAO','FAR','FAT','FAV','FAY','FBM','FCA','FCN','FCO','FDF','FDH','FDU','FEC','FEG','FEN','FEZ',
+  'FGU','FIH','FIZ','FJR','FKB','FKI','FKQ','FKS','FLA','FLG','FLL','FLN','FLO','FLR','FLW','FLZ','FMA','FMI','FMM','FMO',
+  'FNA','FNC','FNI','FNJ','FNT','FOC','FOD','FOG','FON','FOR','FPO','FRA','FRD','FRL','FRO','FRS','FRW','FSC','FSD','FSM',
+  'FSP','FSZ','FTE','FTU','FTW','FUE','FUG','FUJ','FUK','FUN','FUO','FWA','FYJ','FYN','FYU','GAE','GAF','GAJ','GAL','GAM',
+  'GAN','GAQ','GAU','GAY','GBB','GBE','GBJ','GCC','GCH','GCI','GCK','GCM','GCN','GDB','GDE','GDL','GDN','GDQ','GDT','GDV',
+  'GDX','GDZ','GEA','GEC','GEG','GEL','GEM','GEO','GER','GES','GET','GEV','GFF','GFK','GGG','GGT','GGW','GHA','GHB','GHT',
+  'GHV','GIB','GID','GIG','GIL','GIS','GIZ','GJA','GJL','GJT','GKA','GKN','GLA','GLF','GLH','GLT','GMA','GMB','GME','GMO',
+  'GMP','GMQ','GMR','GNB','GND','GNJ','GNS','GNV','GNY','GOA','GOH','GOI','GOJ','GOM','GOP','GOQ','GOT','GOU','GOV','GOX',
+  'GPA','GPI','GPS','GPT','GRB','GRI','GRJ','GRK','GRO','GRQ','GRR','GRU','GRV','GRW','GRX','GRY','GRZ','GSM','GSO','GSP',
+  'GST','GSV','GTE','GTF','GTR','GUA','GUC','GUM','GUP','GUR','GUW','GVA','GVR','GWD','GWL','GWT','GXF','GXG','GXH','GYA',
+  'GYD','GYE','GYM','GYN','GYS','GYU','GYY','GZP','GZT','HAC','HAD','HAH','HAJ','HAK','HAM','HAN','HAQ','HAS','HAU','HAV',
+  'HBA','HBE','HBX','HCJ','HCR','HCZ','HDF','HDG','HDM','HDN','HDS','HDY','HEA','HEH','HEK','HEL','HER','HET','HFA','HFE',
+  'HFN','HFT','HGA','HGH','HGI','HGN','HGO','HGR','HGU','HHH','HHN','HHQ','HHR','HIA','HIB','HID','HII','HIJ','HIN','HIR',
+  'HJJ','HJR','HKD','HKG','HKK','HKN','HKT','HLA','HLD','HLE','HLN','HLP','HLZ','HMA','HMB','HME','HMI','HMO','HNA','HND',
+  'HNL','HNM','HNS','HOB','HOF','HOG','HOI','HOM','HOR','HOT','HOU','HOV','HPA','HPG','HPH','HPN','HQL','HRB','HRE','HRG',
+  'HRI','HRL','HRO','HSA','HSC','HSG','HSL','HSN','HSR','HSS','HSV','HTA','HTG','HTI','HTN','HTS','HTT','HTY','HUH','HUI',
+  'HUN','HUO','HUU','HUX','HUY','HUZ','HVB','HVD','HVG','HVN','HVR','HWR','HXD','HYA','HYD','HYN','HYS','HZA','HZG','HZH',
+  'IAA','IAD','IAG','IAH','IAM','IAN','IAR','IAS','IBA','IBE','IBR','IBZ','ICN','ICT','IDA','IDR','IEG','IFJ','IFN','IFO',
+  'IGA','IGD','IGR','IGT','IGU','IJK','IKA','IKG','IKI','IKS','IKT','IKU','ILD','ILG','ILI','ILM','ILO','ILP','ILQ','ILR',
+  'ILS','ILY','IMF','IMP','IMT','INC','IND','INH','INI','INL','INN','INU','INV','INZ','IOA','IOM','IOS','IPC','IPH','IPI',
+  'IPL','IPN','IPT','IQM','IQN','IQQ','IQT','IRG','IRJ','IRK','IRP','ISA','ISB','ISE','ISG','ISK','ISP','IST','ISU','ITB',
+  'ITH','ITM','ITO','IUE','IVC','IVL','IWA','IWJ','IWK','IXA','IXB','IXC','IXD','IXE','IXG','IXI','IXJ','IXK','IXL','IXM',
+  'IXP','IXR','IXS','IXU','IXY','IXZ','IZA','IZO','IZT','JAC','JAE','JAF','JAI','JAN','JAU','JAV','JAX','JBQ','JBR','JCL',
+  'JDF','JDH','JDZ','JED','JEE','JEG','JER','JFK','JGA','JGD','JGN','JGS','JHB','JHG','JHM','JHS','JIB','JIC','JIJ','JIM',
+  'JIQ','JJD','JJN','JJU','JKG','JKH','JKR','JLN','JLR','JMJ','JMK','JMS','JMU','JNB','JNG','JNH','JNU','JNZ','JOE','JOG',
+  'JOI','JOL','JOS','JPA','JRH','JRO','JSA','JSH','JSI','JSJ','JSO','JSR','JST','JTC','JTR','JUB','JUJ','JUL','JUZ','JXA',
+  'JYV','JZH','KAB','KAC','KAD','KAI','KAJ','KAN','KAO','KAT','KAW','KBL','KBR','KBV','KCH','KCM','KCT','KCY','KCZ','KDH',
+  'KDL','KDM','KDO','KDU','KEF','KEJ','KEM','KEP','KER','KET','KGA','KGC','KGD','KGF','KGI','KGL','KGP','KGS','KGT','KHD',
+  'KHE','KHG','KHH','KHI','KHK','KHN','KHS','KHT','KHV','KHX','KIH','KIJ','KIK','KIM','KIN','KIR','KIS','KIX','KJA','KJB',
+  'KJH','KJI','KJT','KKC','KKE','KKJ','KKN','KKR','KKS','KKW','KKX','KLH','KLO','KLR','KLU','KLV','KLW','KLX','KMA','KMC',
+  'KME','KMG','KMI','KMJ','KMQ','KMS','KMW','KND','KNG','KNH','KNO','KNQ','KNS','KNU','KNX','KOA','KOE','KOI','KOJ','KOK',
+  'KOP','KOS','KOV','KPO','KPW','KQH','KQT','KRF','KRK','KRL','KRN','KRO','KRP','KRR','KRS','KRT','KRW','KSA','KSC','KSD',
+  'KSF','KSH','KSL','KSN','KSU','KSY','KSZ','KTA','KTD','KTG','KTI','KTM','KTN','KTP','KTT','KTW','KUA','KUF','KUH','KUL',
+  'KUM','KUN','KUO','KUS','KUT','KUU','KUV','KVA','KVG','KVO','KVX','KWA','KWE','KWG','KWI','KWJ','KWL','KWM','KWZ','KXB',
+  'KXK','KYA','KYD','KYP','KYS','KYZ','KZI','KZN','KZO','LAD','LAE','LAF','LAJ','LAL','LAN','LAO','LAP','LAQ','LAR','LAS',
+  'LAU','LAW','LAX','LBA','LBB','LBC','LBD','LBE','LBF','LBG','LBL','LBS','LBU','LBV','LCA','LCE','LCG','LCH','LCJ','LCK',
+  'LCX','LCY','LDB','LDE','LDS','LDU','LDX','LDY','LEA','LEB','LED','LEI','LEJ','LEN','LER','LET','LEU','LEX','LFM','LFQ',
+  'LFT','LFW','LGA','LGB','LGG','LGI','LGK','LGW','LHE','LHG','LHL','LHR','LHS','LHW','LIF','LIG','LIH','LIL','LIM','LIN',
+  'LIO','LIR','LIS','LIT','LIW','LJG','LJU','LKL','LKN','LKO','LLA','LLF','LLV','LLW','LME','LMM','LMN','LMP','LNJ','LNK',
+  'LNL','LNO','LNS','LNY','LNZ','LOE','LOP','LOS','LPA','LPB','LPF','LPI','LPK','LPL','LPP','LPQ','LPT','LRD','LRE','LRH',
+  'LRM','LRR','LRT','LRU','LSC','LSE','LSH','LSI','LSP','LSR','LST','LSY','LTD','LTI','LTK','LTM','LTN','LTO','LTU','LTX',
+  'LUA','LUD','LUG','LUK','LUM','LUN','LUQ','LUR','LUV','LUX','LUZ','LVI','LWB','LWN','LWO','LWS','LXA','LXR','LYA','LYC',
+  'LYG','LYH','LYI','LYP','LYR','LYS','LZG','LZH','LZN','LZO','LZY','MAA','MAB','MAD','MAF','MAG','MAH','MAJ','MAK','MAM',
+  'MAN','MAO','MAQ','MAR','MAS','MAU','MAZ','MBA','MBD','MBE','MBI','MBJ','MBS','MBT','MBW','MBX','MCE','MCG','MCI','MCK',
+  'MCN','MCO','MCP','MCT','MCW','MCX','MCY','MCZ','MDC','MDE','MDG','MDI','MDK','MDL','MDQ','MDT','MDU','MDW','MDZ','MEB',
+  'MEC','MED','MEE','MEG','MEH','MEI','MEL','MEM','MEQ','MEX','MFE','MFK','MFM','MFR','MFU','MGA','MGB','MGC','MGF','MGH',
+  'MGM','MGQ','MGW','MGZ','MHD','MHG','MHH','MHK','MHQ','MHT','MHU','MIA','MID','MIG','MII','MIM','MIR','MIU','MJF','MJI',
+  'MJK','MJM','MJN','MJT','MJZ','MKE','MKG','MKK','MKL','MKM','MKP','MKQ','MKR','MKU','MKW','MKY','MKZ','MLA','MLB','MLE',
+  'MLG','MLI','MLM','MLN','MLU','MLW','MLX','MMB','MMD','MME','MMG','MMH','MMJ','MMK','MMO','MMX','MMY','MMZ','MNC','MNG',
+  'MNI','MNJ','MNL','MNX','MOB','MOC','MOG','MOL','MOQ','MOT','MOV','MOZ','MPA','MPH','MPL','MPM','MPN','MPW','MPY','MQF',
+  'MQJ','MQL','MQM','MQN','MQP','MQS','MQT','MQX','MRE','MRI','MRS','MRU','MRV','MRX','MRY','MRZ','MSJ','MSL','MSN','MSO',
+  'MSP','MSQ','MSR','MSS','MST','MSU','MSY','MSZ','MTJ','MTR','MTT','MTY','MUA','MUB','MUC','MUE','MUH','MUN','MUR','MUX',
+  'MVB','MVD','MVF','MVP','MVQ','MVR','MVT','MWA','MWL','MWX','MWZ','MXL','MXP','MXV','MXX','MYA','MYD','MYE','MYG','MYJ',
+  'MYL','MYP','MYQ','MYR','MYT','MYU','MYW','MYY','MZG','MZI','MZL','MZO','MZQ','MZR','MZS','MZT','MZV','NAA','NAG','NAH',
+  'NAJ','NAL','NAM','NAN','NAP','NAQ','NAS','NAT','NAV','NAW','NBC','NBE','NBJ','NBO','NBS','NCA','NCE','NCL','NCU','NCY',
+  'NDB','NDC','NDG','NDJ','NDR','NDU','NEC','NER','NEV','NFG','NGB','NGE','NGO','NGQ','NGS','NHV','NIM','NJC','NJF','NKC',
+  'NKG','NKM','NKT','NLA','NLD','NLH','NLI','NLK','NLT','NLU','NMA','NMF','NMI','NNG','NNM','NNT','NOB','NOC','NOJ','NOP',
+  'NOS','NOU','NOV','NOZ','NPE','NPL','NPO','NPT','NQN','NQY','NQZ','NRA','NRK','NRN','NRR','NRT','NSH','NSI','NSK','NSN',
+  'NST','NTE','NTG','NTL','NTN','NTQ','NTX','NUE','NUI','NUM','NUX','NVA','NVI','NVT','NWI','NYA','NYI','NYK','NYM','NYO',
+  'NYT','NZC','NZH','NZL','OAJ','OAK','OAX','OBO','OCC','OCE','OCJ','OCS','ODB','ODE','OEC','OER','OGD','OGG','OGL','OGN',
+  'OGS','OGU','OGX','OGZ','OHD','OHE','OHO','OHS','OIM','OIR','OIT','OKA','OKC','OKD','OKE','OKI','OKJ','OKL','OKY','OLA',
+  'OLB','OLF','OLM','OLZ','OMA','OMD','OME','OMH','OMN','OMO','OMR','OMS','OND','ONJ','ONQ','ONT','ONX','OOL','OOM','OPF',
+  'OPO','OPU','ORB','ORD','ORF','ORH','ORK','ORN','ORT','ORU','ORY','OSD','OSI','OSL','OSR','OSS','OST','OSW','OTH','OTP',
+  'OTZ','OUA','OUD','OUL','OUZ','OVB','OVD','OVS','OWB','OXB','OYE','OZC','OZG','OZZ','PAB','PAC','PAD','PAE','PAG','PAH',
+  'PAP','PAT','PAV','PAZ','PBC','PBD','PBG','PBH','PBI','PBM','PBO','PBR','PBU','PCL','PCP','PCR','PDA','PDG','PDK','PDL',
+  'PDO','PDP','PDS','PDT','PDV','PDX','PED','PEE','PEG','PEI','PEK','PEM','PEN','PER','PES','PET','PEV','PEW','PEX','PEZ',
+  'PFB','PFO','PGA','PGD','PGF','PGH','PGK','PGU','PGV','PGZ','PHB','PHC','PHE','PHF','PHG','PHH','PHL','PHS','PHW','PHX',
+  'PHY','PIA','PIB','PIE','PIH','PIK','PIR','PIS','PIT','PIU','PIX','PIZ','PJM','PKB','PKC','PKE','PKR','PKU','PKV','PKX',
+  'PKY','PKZ','PLJ','PLM','PLN','PLO','PLQ','PLS','PLW','PLX','PLZ','PMC','PMF','PMG','PMI','PMO','PMQ','PMR','PMV','PMW',
+  'PMY','PNA','PNI','PNK','PNL','PNP','PNQ','PNR','PNS','PNT','PNY','PNZ','POA','POG','POL','POM','POP','POR','POS','POZ',
+  'PPB','PPG','PPK','PPN','PPP','PPS','PPT','PQC','PQI','PQQ','PRA','PRC','PRG','PRI','PRM','PRN','PSA','PSC','PSD','PSE',
+  'PSG','PSM','PSO','PSP','PSR','PSS','PSU','PSZ','PTG','PTH','PTJ','PTP','PTU','PTY','PUB','PUD','PUF','PUG','PUJ','PUQ',
+  'PUS','PUU','PUW','PUY','PUZ','PVA','PVD','PVG','PVH','PVK','PVR','PVU','PWE','PWM','PWQ','PXM','PXO','PXR','PXU','PYJ',
+  'PYK','PZB','PZH','PZI','PZO','PZU','QBC','QOW','QRO','QRW','QSF','QSR','QSZ','QUO','RAB','RAE','RAH','RAI','RAK','RAO',
+  'RAP','RAR','RAS','RBA','RBR','RBY','RCB','RCH','RDD','RDM','RDO','RDP','RDU','RDZ','REC','REG','REL','REN','RER','RES',
+  'REU','REW','REX','RFD','RFP','RGA','RGI','RGL','RGN','RGO','RHD','RHI','RHO','RIA','RIB','RIC','RIS','RIW','RIX','RIY',
+  'RIZ','RJA','RJH','RJK','RJN','RKD','RKE','RKS','RKT','RKV','RKZ','RLG','RLK','RMA','RMF','RMI','RML','RMO','RMQ','RMU',
+  'RMZ','RNB','RNJ','RNN','RNO','RNS','ROA','ROB','ROC','ROI','ROK','ROO','ROP','ROR','ROS','ROT','ROV','ROW','RPR','RQA',
+  'RRG','RRJ','RRS','RSA','RSD','RSI','RST','RSU','RSW','RTB','RTM','RUA','RUH','RUN','RUR','RUT','RVK','RVN','RVY','RWN',
+  'RXS','RYB','RYK','RZE','RZR','RZV','SAB','SAF','SAG','SAH','SAI','SAL','SAN','SAP','SAQ','SAT','SAV','SAW','SBA','SBD',
+  'SBH','SBN','SBP','SBT','SBW','SBY','SBZ','SCC','SCE','SCK','SCL','SCN','SCO','SCQ','SCR','SCT','SCU','SCV','SCW','SDD',
+  'SDE','SDF','SDG','SDJ','SDK','SDL','SDP','SDQ','SDR','SDS','SDU','SDW','SDY','SEA','SEB','SEK','SEN','SEZ','SFA','SFB',
+  'SFG','SFJ','SFN','SFO','SFS','SFT','SGC','SGD','SGF','SGN','SGU','SHA','SHB','SHD','SHE','SHI','SHJ','SHL','SHM','SHO',
+  'SHR','SHS','SHV','SHW','SID','SIG','SIN','SIP','SIS','SIT','SJC','SJD','SJE','SJI','SJJ','SJK','SJL','SJO','SJP','SJT',
+  'SJU','SJW','SJZ','SKB','SKD','SKG','SKN','SKO','SKP','SKT','SKX','SKZ','SLA','SLC','SLD','SLE','SLK','SLL','SLM','SLN',
+  'SLP','SLU','SLW','SLY','SLZ','SMA','SMF','SMI','SML','SMN','SMR','SMS','SMW','SMX','SNA','SNB','SNC','SNE','SNN','SNO',
+  'SNP','SNR','SNU','SNV','SNW','SOB','SOC','SOF','SOJ','SOM','SON','SOQ','SOU','SOW','SPC','SPD','SPI','SPN','SPP','SPR',
+  'SPS','SPU','SPX','SPY','SQD','SQG','SQJ','SQL','SRE','SRG','SRP','SRQ','SRT','SRY','SRZ','SSA','SSG','SSH','SSJ','SST',
+  'SSY','STC','STD','STG','STI','STL','STM','STN','STR','STS','STT','STV','STW','STX','SUB','SUF','SUG','SUI','SUJ','SUN',
+  'SUV','SUX','SVA','SVB','SVC','SVD','SVG','SVI','SVJ','SVL','SVO','SVQ','SVX','SVZ','SWA','SWF','SWO','SXB','SXM','SXR',
+  'SYD','SYO','SYQ','SYR','SYS','SYX','SYY','SYZ','SZA','SZB','SZF','SZG','SZH','SZK','SZX','SZY','SZZ','TAB','TAC','TAE',
+  'TAG','TAH','TAI','TAK','TAM','TAO','TAP','TAS','TAT','TAY','TAZ','TBB','TBH','TBI','TBJ','TBN','TBP','TBS','TBT','TBU',
+  'TBZ','TCA','TCB','TCO','TCP','TCQ','TCZ','TDD','TDK','TDX','TEB','TEE','TEN','TEQ','TER','TET','TEX','TEZ','TFF','TFN',
+  'TFS','TFU','TGD','TGG','TGJ','TGK','TGM','TGO','TGR','TGT','TGU','TGZ','THE','THG','THL','THN','THQ','THR','THS','THU',
+  'TIA','TIF','TIH','TIJ','TIM','TIN','TIQ','TIR','TIU','TIV','TIW','TJA','TJG','TJH','TJK','TJM','TJU','TKD','TKF','TKG',
+  'TKK','TKN','TKP','TKS','TKU','TKX','TLC','TLE','TLH','TLL','TLM','TLN','TLQ','TLS','TLV','TME','TMH','TMJ','TML','TMM',
+  'TMP','TMR','TMS','TMT','TMW','TMX','TNA','TND','TNE','TNG','TNH','TNJ','TNN','TNR','TOD','TOE','TOF','TOL','TOM','TOS',
+  'TOU','TOY','TPA','TPE','TPJ','TPP','TPQ','TPS','TQO','TRA','TRC','TRD','TRE','TRF','TRG','TRI','TRK','TRN','TRR','TRS',
+  'TRT','TRU','TRV','TRW','TRZ','TSA','TSF','TSJ','TSM','TSN','TSR','TST','TSV','TTA','TTE','TTJ','TTN','TTT','TTU','TUA',
+  'TUB','TUC','TUF','TUG','TUI','TUK','TUL','TUN','TUO','TUP','TUR','TUS','TUU','TVC','TVF','TVT','TVY','TWF','TWT','TWU',
+  'TXE','TXK','TXN','TYF','TYL','TYN','TYR','TYS','TZA','TZL','TZN','TZX','UAI','UAQ','UBA','UBJ','UBN','UBP','UCB','UCT',
+  'UDI','UDJ','UDR','UEL','UEO','UET','UFA','UGA','UGC','UGU','UIB','UIH','UIN','UIO','UKB','UKE','UKK','UKX','ULG','ULH',
+  'ULK','ULO','ULP','ULU','ULV','ULY','UME','UNI','UNK','UNN','UPG','UPN','URA','URC','URE','URG','URJ','URS','URT','URY',
+  'USA','USH','USK','USM','USN','USR','UST','USU','UTH','UTN','UTO','UTP','UTT','UUA','UUD','UUS','UVE','UVF','UYL','UYN',
+  'UYU','VAA','VAI','VAM','VAN','VAQ','VAR','VAV','VAW','VBS','VBY','VCA','VCE','VCP','VCS','VCT','VDC','VDE','VDH','VDM',
+  'VDO','VDS','VDZ','VEL','VEO','VER','VFA','VGA','VGO','VHM','VIE','VIG','VII','VIJ','VIL','VIT','VIX','VKG','VKO','VKT',
+  'VLC','VLD','VLI','VLL','VLN','VLV','VMU','VNO','VNS','VNX','VOG','VOL','VOZ','VPE','VPN','VPS','VPY','VQS','VRA','VRB',
+  'VRC','VRL','VRN','VSA','VSE','VST','VTE','VTU','VTZ','VUP','VUS','VVC','VVI','VVO','VVZ','VXC','VXE','VXO','VYI','WAE',
+  'WAG','WAW','WBM','WDH','WDS','WEF','WEH','WEI','WGA','WGE','WGN','WHA','WHK','WIC','WIL','WIN','WJR','WJU','WKA','WKJ',
+  'WKK','WLG','WLS','WMI','WMN','WMT','WMX','WNI','WNP','WNR','WNS','WNZ','WOL','WOS','WRE','WRG','WRO','WSI','WST','WSZ',
+  'WTB','WUA','WUH','WUN','WUS','WUU','WUX','WUZ','WVB','WWK','WYA','WYS','XAI','XAP','XBJ','XCH','XCR','XFN','XIC','XIL',
+  'XIY','XKS','XMH','XMN','XMS','XNA','XNN','XPL','XQP','XQU','XRY','XSC','XSP','XTG','XUZ','XWA','YAA','YAG','YAK','YAM',
+  'YAP','YAY','YAZ','YBC','YBG','YBK','YBL','YBP','YBR','YBX','YBY','YCB','YCD','YCG','YCL','YCM','YCU','YDA','YDF','YDN',
+  'YEG','YEI','YEV','YFB','YFC','YFS','YGJ','YGL','YGP','YGR','YGV','YGW','YHM','YHU','YHY','YHZ','YIA','YIC','YIE','YIF',
+  'YIH','YIN','YIV','YIW','YJT','YKA','YKF','YKH','YKL','YKM','YKO','YKS','YLK','YLL','YLW','YLX','YMM','YMO','YMS','YMT',
+  'YMX','YNA','YNB','YND','YNJ','YNL','YNT','YNY','YNZ','YOJ','YOL','YOW','YPA','YPE','YPL','YPN','YPQ','YPR','YPW','YPX',
+  'YPY','YPZ','YQA','YQB','YQD','YQG','YQH','YQK','YQL','YQM','YQN','YQQ','YQR','YQT','YQU','YQX','YQY','YQZ','YRB','YRJ',
+  'YRL','YRO','YRT','YSB','YSF','YSJ','YSL','YSM','YSQ','YTH','YTS','YTY','YTZ','YUL','YUM','YUS','YUX','YUY','YVB','YVC',
+  'YVO','YVP','YVQ','YVR','YVV','YWG','YWK','YWL','YXC','YXE','YXH','YXJ','YXK','YXL','YXS','YXT','YXU','YXX','YXY','YYA',
+  'YYB','YYC','YYD','YYE','YYF','YYG','YYJ','YYL','YYQ','YYR','YYT','YYY','YYZ','YZF','YZP','YZS','YZT','YZU','YZV','YZY',
+  'ZAD','ZAG','ZAH','ZAL','ZAM','ZAZ','ZBF','ZBR','ZCL','ZCO','ZEL','ZHA','ZHY','ZIA','ZIG','ZIH','ZIX','ZKP','ZLO','ZMT',
+  'ZND','ZNE','ZNZ','ZOS','ZQN','ZQZ','ZRH','ZSA','ZSE','ZSJ','ZTH','ZUH','ZYI','ZYL'
+]);
+create table public.user_profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  nickname text not null,
+  home_airport text references public.profile_airports(iata),
+  updated_at timestamptz not null default now(),
+  constraint profile_nickname_format check (nickname ~ '^[A-Za-z0-9_ -]{3,20}$' and nickname = btrim(nickname)),
+  constraint profile_nickname_appropriate check (public.challenge_nickname_allowed(nickname))
+);
+create unique index profile_nickname_unique on public.user_profiles(lower(nickname));
+alter table public.user_profiles enable row level security;
+revoke all on public.user_profiles from anon, authenticated;
+grant select on public.user_profiles to authenticated;
+create policy "Read own profile" on public.user_profiles for select to authenticated
+  using ((select auth.uid()) = user_id);
+-- Preserve existing challenge identities. Do not infer a public nickname from Google.
+insert into public.user_profiles(user_id, nickname)
+  select distinct on (user_id) user_id, nickname from public.challenge_members
+  order by user_id, joined_at desc;
+
+create function public.save_study_profile(p_nickname text, p_home_airport text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare u uuid := auth.uid(); result public.user_profiles;
+begin
+  if u is null then raise exception 'Sign in to save your profile.'; end if;
+  -- Serialize profile/enrollment writes for this account, including first-save races.
+  perform 1 from auth.users where id = u for update;
+  insert into public.user_profiles(user_id, nickname, home_airport)
+    values(u, btrim(p_nickname), nullif(upper(btrim(p_home_airport)), ''))
+    on conflict (user_id) do update set nickname = excluded.nickname,
+      home_airport = excluded.home_airport, updated_at = now()
+    returning * into result;
+  -- Identity changes never reset enrollment times or challenge scores.
+  update public.challenge_members set nickname = result.nickname where user_id = u;
+  return jsonb_build_object('nickname', result.nickname, 'home_airport', result.home_airport);
+end;
+$$;
+revoke all on function public.save_study_profile(text, text) from public, anon, authenticated;
+grant execute on function public.save_study_profile(text, text) to authenticated;
+
+-- All clients, including an older deployed frontend, share the profile nickname.
+create or replace function public.join_study_challenge(p_nickname text) returns void
+language plpgsql security definer set search_path = '' as $$
+declare c public.study_challenges; u uuid := auth.uid(); chosen text;
+begin
+  if u is null then raise exception 'Sign in to join.'; end if;
+  select * into c from public.study_challenges where id = 'pre-thanksgiving-2026';
+  if now() < c.starts_at or now() >= c.ends_at then raise exception 'Challenge is not open.'; end if;
+  perform 1 from auth.users where id = u for update;
+  select nickname into chosen from public.user_profiles where user_id = u;
+  if not found then
+    perform public.save_study_profile(p_nickname, null);
+    chosen := btrim(p_nickname);
+  end if;
+  insert into public.challenge_members(challenge_id, user_id, nickname)
+    values(c.id, u, chosen) on conflict (challenge_id, user_id) do nothing;
+end;
+$$;
+revoke all on function public.join_study_challenge(text) from public, anon, authenticated;
+grant execute on function public.join_study_challenge(text) to authenticated;

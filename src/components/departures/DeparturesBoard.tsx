@@ -1,3 +1,5 @@
+import AccountButton from '../account/AccountButton';
+import { useProfileStore } from '../../store/profileStore';
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useFlightStore } from '../../store/flightStore';
@@ -169,6 +171,7 @@ const FlightRow: React.FC<RowProps> = ({ flight, isLast, isPhone, isTiny, onSele
 
 const DeparturesBoard: React.FC = () => {
   const { departure, selectFlight, setPhase } = useFlightStore();
+  const nickname = useProfileStore(state => state.profile?.nickname);
   const isPhone = useIsPhone();
   const isTiny = useMediaQuery('(max-width: 359px)');
 
@@ -207,6 +210,8 @@ const DeparturesBoard: React.FC = () => {
   return (
     <div style={{ background: '#06080f' }} className="min-h-screen py-7 sm:py-14 px-3 sm:px-4">
       <div style={{ maxWidth: 960 }} className="mx-auto">
+
+        <div className="mb-4 flex items-center justify-between gap-3"><p className="text-sm text-gold/70">{nickname ? `Where to next, ${nickname}?` : 'Your next focus session awaits.'}</p><AccountButton /></div>
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-2">

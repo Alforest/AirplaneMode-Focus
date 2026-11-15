@@ -93,5 +93,44 @@ select pg_temp.assert_true(public.study_challenge_board()->'me' = 'null'::jsonb,
 select pg_temp.assert_true((public.study_challenge_board()->>'participant_count')::int = 2, 'final standings remain public');
 select pg_temp.assert_true(not ((public.study_challenge_board()->'entries'->0) ?| array['user_id', 'email', 'joined_at']), 'public board hides identifiers');
 reset role;
+\ir ../supabase/migrations/202611150002_traveler_profiles.sql
+select pg_temp.assert_true((select count(*) = 2 from public.user_profiles), 'existing challenge identities become profiles');
+set local request.jwt.claim.sub = '00000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select pg_temp.assert_true((select count(*) = 1 from public.user_profiles), 'profile reads isolated to account');
+select public.save_study_profile('Cloud Captain', 'jfk');
+select pg_temp.assert_true((select home_airport = 'JFK' from public.user_profiles), 'home airport normalized and saved');
+select pg_temp.assert_true(public.study_challenge_board()->'me'->>'nickname' = 'Cloud Captain', 'nickname updates leaderboard');
+select pg_temp.assert_true((public.study_challenge_board()->'me'->>'minutes')::int = 1, 'profile changes preserve score');
+select pg_temp.expect_error($q$select public.save_study_profile('sky reader', 'JFK')$q$, 'global nickname uniqueness ignores case');
+select pg_temp.expect_error($q$select public.save_study_profile('Sh1t Pilot', 'JFK')$q$, 'profile profanity rejected');
+select pg_temp.expect_error($q$select public.save_study_profile('Cloud Captain', 'ZZZ')$q$, 'unknown airport rejected');
+select pg_temp.expect_error($q$select public.save_study_profile('Cloud Captain', 'XXXX')$q$, 'malformed airport rejected');
+select pg_temp.expect_error($q$select public.save_study_profile('ab', null)$q$, 'short nickname rejected');
+select pg_temp.assert_true((select nickname = 'Cloud Captain' and home_airport = 'JFK' from public.user_profiles), 'invalid saves retain previous profile');
+select pg_temp.expect_error($q$update public.user_profiles set nickname = 'Bypass'$q$, 'profile writes must use validated RPC');
+select public.save_study_profile('Cloud Captain', '');
+select pg_temp.assert_true((select home_airport is null from public.user_profiles), 'home airport can be cleared');
+reset role;
+insert into auth.users values ('00000000-0000-4000-8000-000000000003');
+set local request.jwt.claim.sub = '00000000-0000-4000-8000-000000000003';
+set local role authenticated;
+select public.save_study_profile('New Traveler', 'LHR');
+select pg_temp.assert_true(public.study_challenge_board()->'me' = 'null'::jsonb, 'saving profile does not enroll in challenge');
+reset role;
+update public.study_challenges set ends_at = now() + interval '1 day';
+set local role authenticated;
+select public.join_study_challenge('Different Name');
+select pg_temp.assert_true(public.study_challenge_board()->'me'->>'nickname' = 'New Traveler', 'enrollment uses saved profile identity');
+select pg_temp.assert_true((select home_airport = 'LHR' from public.user_profiles), 'joining preserves home airport');
+reset role;
+set local request.jwt.claim.sub = '';
+set local role anon;
+select pg_temp.expect_error('select * from public.user_profiles', 'guest cannot read profiles');
+select pg_temp.expect_error($q$select public.save_study_profile('Guest', 'JFK')$q$, 'guest cannot save profile');
+reset role;
+-- Account deletion removes profile, enrollment, and flights.
+delete from auth.users where id = '00000000-0000-4000-8000-000000000003';
+select pg_temp.assert_true((select count(*) = 2 from public.user_profiles), 'account deletion cascades to profile');
 rollback;
 \echo 'Challenge scoring and access tests passed.'

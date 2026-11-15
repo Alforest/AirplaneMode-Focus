@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ChallengeBoard, challengePhase, studyTime } from '../../lib/challenge';
+import { useProfileStore } from '../../store/profileStore';
+import { useAccountUI } from '../../store/accountUIStore';
 import { useAuthStore } from '../../store/authStore';
 
 const buttonClass = 'rounded-lg border border-gold/30 px-4 py-2 text-sm text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-50';
@@ -30,6 +32,8 @@ export function ChallengeBanner() {
 }
 
 export default function ChallengeSection() {
+  const profile = useProfileStore(state => state.profile);
+  const openAccount = useAccountUI(state => state.open);
   const { user, ready, busy, error: authError, signIn } = useAuthStore();
   const [board, setBoard] = useState<ChallengeBoard | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +83,7 @@ export default function ChallengeSection() {
       window.removeEventListener('focus', retry);
       window.removeEventListener('online', retry);
     };
-  }, [user?.id, refresh]);
+  }, [user?.id, refresh, profile?.nickname]);
 
   if (!supabase) return null;
   const phase = challengePhase(clock + offset);
@@ -90,13 +94,13 @@ export default function ChallengeSection() {
     setJoining(true);
     setError(null);
     try {
-      const { error: failure } = await supabase.rpc('join_study_challenge', { p_nickname: nickname.trim() });
+      const { error: failure } = await supabase.rpc('join_study_challenge', { p_nickname: profile?.nickname ?? nickname.trim() });
       if (failure) {
         setError(failure.code === '23505' ? 'That nickname is taken. Try another.'
-          : failure.code === '23514' && failure.message.includes('challenge_nickname_appropriate')
+          : failure.code === '23514' && failure.message.includes('nickname_appropriate')
             ? 'Please choose a nickname without profanity or slurs.'
             : 'Could not join the challenge. Check your nickname and try again.');
-      } else setRefresh(value => value + 1);
+      } else { void useProfileStore.getState().load(); setRefresh(value => value + 1); }
     } catch { setError('Could not connect. Please try again.'); }
     finally { setJoining(false); }
   };
@@ -126,10 +130,10 @@ export default function ChallengeSection() {
               <button type="button" disabled={!ready || busy} className={`${buttonClass} mt-4`} onClick={() => void signIn()}>{busy ? 'Connecting…' : 'Continue with Google'}</button>
               <p className="mt-3 text-xs text-muted-white/60">By using FocusFlight, you agree to our <a className="underline text-gold" href="terms/">Terms</a>. Read our <a className="underline text-gold" href="privacy/">Privacy Policy</a>.</p>
             </> : <form onSubmit={event => void join(event)}>
-              <label htmlFor="challenge-nickname" className="block text-sm text-muted-white">Choose your public nickname</label>
+              {profile ? <div className="mb-3"><p className="text-sm text-gold">Joining as {profile.nickname}</p><button type="button" onClick={openAccount} className="mt-1 text-xs text-gold/70 underline">Edit your traveler profile</button></div> : <label htmlFor="challenge-nickname" className="block text-sm text-muted-white">Choose your public nickname</label>}
               <p id="nickname-help" className="mt-1 text-xs text-muted-white/60">Your nickname, rank, and challenge study total will be public. Your email and routes stay private. Use 3–20 letters, numbers, spaces, hyphens or underscores. No profanity or slurs.</p>
               <div className="mt-3 flex flex-wrap gap-3">
-                <input id="challenge-nickname" aria-describedby="nickname-help" required minLength={3} maxLength={20} pattern="[A-Za-z0-9_ \-]{3,20}" autoComplete="off" value={nickname} onChange={event => setNickname(event.target.value)} className="min-w-0 w-full sm:w-64 rounded-lg border border-gold/25 bg-navy px-3 py-2 text-muted-white focus:outline focus:outline-2 focus:outline-gold" placeholder="e.g. CloudScholar" />
+                {!profile && <input id="challenge-nickname" aria-describedby="nickname-help" required minLength={3} maxLength={20} pattern="[A-Za-z0-9_ \-]{3,20}" autoComplete="off" value={nickname} onChange={event => setNickname(event.target.value)} className="min-w-0 w-full sm:w-64 rounded-lg border border-gold/25 bg-navy px-3 py-2 text-muted-white focus:outline focus:outline-2 focus:outline-gold" placeholder="e.g. CloudScholar" />}
                 <button disabled={joining || loading || !board} className={buttonClass}>{joining ? 'Joining…' : 'Join the challenge'}</button>
               </div>
             </form>}

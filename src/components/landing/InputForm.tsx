@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useProfileStore } from '../../store/profileStore';
 import { findAirportByIata } from '../../data/airports';
 import { useFlightStore } from '../../store/flightStore';
 
@@ -12,9 +13,12 @@ const CELLS = [0, 1, 2];
 
 const InputForm: React.FC = () => {
   const { setDeparture } = useFlightStore();
+  const homeAirport = useProfileStore(state => state.profile?.home_airport);
+  const edited = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(homeAirport ?? '');
+  useEffect(() => { if (!edited.current) setValue(homeAirport ?? ''); }, [homeAirport]);
   const [error, setError] = useState('');
   const [focused, setFocused] = useState(false);
 
@@ -31,12 +35,14 @@ const InputForm: React.FC = () => {
   const focusInput = () => inputRef.current?.focus();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    edited.current = true;
     const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
     setValue(val);
     if (error) setError('');
   };
 
   const handleClear = () => {
+    edited.current = true;
     setValue('');
     setError('');
     focusInput();
@@ -200,6 +206,8 @@ const InputForm: React.FC = () => {
           Depart
         </motion.button>
       </div>
+
+      {homeAirport && <button type="button" onClick={() => { edited.current = false; setValue(homeAirport); setError(''); }} className="mt-3 text-xs text-gold/60 hover:text-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">⌂ Use home airport · {homeAirport}</button>}
 
       {/* Confirmation / error / hint */}
       <div className="mt-3 min-h-[1.5rem]">
