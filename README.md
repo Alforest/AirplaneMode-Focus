@@ -233,3 +233,17 @@ After applying the migration, verify in a normal browser:
 4. Start flights in two tabs. Only the latest active flight can count.
 5. Disconnect at landing, reconnect before the deadline, and confirm one completion.
 6. Check mobile layout and final standings after the deadline.
+
+
+### Nickname moderation
+
+Apply `supabase/migrations/202611150001_nickname_moderation.sql` to enable the
+server-side nickname rule. It rejects common English profanity/slurs, folds case
+and common number substitutions, and detects separated variants of strong terms.
+Ambiguous words use token matching to reduce innocent-name false positives.
+Existing matching nicknames receive random `Traveler-…` aliases without changing
+membership or scores. New and updated names must satisfy a database constraint,
+including writes that bypass the UI. Signup displays a specific moderation error.
+The SQL integration tests cover bypass attempts and innocent-name regressions.
+This is a curated English filter, not comprehensive multilingual moderation;
+new spellings may need additions to the validator in a later migration.

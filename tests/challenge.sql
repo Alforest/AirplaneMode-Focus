@@ -13,6 +13,10 @@ grant usage on schema auth to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
 insert into auth.users values ('00000000-0000-4000-8000-000000000001'), ('00000000-0000-4000-8000-000000000002');
 \ir ../supabase/migrations/202611140002_thanksgiving_challenge.sql
+-- Seed a legacy inappropriate nickname before the moderation migration.
+insert into public.challenge_members(challenge_id, user_id, nickname)
+values ('pre-thanksgiving-2026', '00000000-0000-4000-8000-000000000001', 'Sh1t Pilot');
+\ir ../supabase/migrations/202611150001_nickname_moderation.sql
 -- Make tests independent of today's date.
 update public.study_challenges set starts_at = now() - interval '1 day', ends_at = now() + interval '1 day';
 create function pg_temp.assert_true(value boolean, message text) returns void language plpgsql as $$
@@ -24,6 +28,13 @@ begin
   raise exception 'FAILED (unexpected success): %', message;
 end;
 $$;
+select pg_temp.assert_true((select nickname ~ '^Traveler-[a-f0-9]{11}$' from public.challenge_members limit 1), 'legacy profanity receives neutral alias');
+select pg_temp.assert_true((select count(*) = 1 from public.challenge_members), 'moderation preserves membership');
+delete from public.challenge_members; -- disposable fixture only
+select pg_temp.assert_true(not public.challenge_nickname_allowed(name), 'blocked variant: ' || name)
+from unnest(array['fuck', 'FuCkPilot', 'f_u_c_k', 'f u c k', 'f4gg0t', 'sh1t', 'b1tch', 'n1gger', 'n i g g a', 'ass', 'dick123', 'slut', 'whore', 'phuck', 'PussyPilot']) as name;
+select pg_temp.assert_true(public.challenge_nickname_allowed(name), 'allowed innocent name: ' || name)
+from unnest(array['Cloud Scholar', 'Sky Reader', 'Scunthorpe', 'Cassandra', 'Dickinson', 'CockpitCaptain', 'ClassicPilot', 'BassPlayer', 'HelloThere', 'Ash123', 'Traveler-1234']) as name;
 set local role anon;
 select pg_temp.assert_true(public.study_challenge_board()->'entries' = '[]'::jsonb, 'guest can read empty board');
 select pg_temp.expect_error('select * from public.challenge_members', 'guest cannot read private membership');
@@ -33,6 +44,8 @@ set local request.jwt.claim.sub = '00000000-0000-4000-8000-000000000001';
 set local role authenticated;
 select pg_temp.expect_error($q$select public.start_challenge_flight('10000000-0000-4000-8000-000000000001', 1)$q$, 'must join before takeoff');
 select pg_temp.expect_error($q$select public.join_study_challenge('<script>')$q$, 'invalid nickname');
+select pg_temp.expect_error($q$select public.join_study_challenge('Sh1t Pilot')$q$, 'RPC rejects profanity');
+select pg_temp.expect_error($q$select public.join_study_challenge('f_u_c_k')$q$, 'RPC rejects separated profanity');
 select public.join_study_challenge('Cloud Scholar');
 select public.join_study_challenge('Another Name');
 select pg_temp.assert_true(public.study_challenge_board()->'me'->>'nickname' = 'Cloud Scholar', 'joining is idempotent');
@@ -44,6 +57,7 @@ select pg_temp.expect_error($q$select public.finish_challenge_flight('10000000-0
 select pg_temp.expect_error('select * from public.challenge_flights', 'cannot access raw flights');
 select pg_temp.expect_error($q$update public.challenge_flights set started_at = now() - interval '1 hour'$q$, 'cannot forge elapsed time');
 reset role;
+select pg_temp.expect_error($q$update public.challenge_members set nickname = 'b1tch'$q$, 'constraint rejects direct nickname updates');
 update public.challenge_flights set started_at = now() - interval '2 minutes';
 set local role authenticated;
 select public.finish_challenge_flight('10000000-0000-4000-8000-000000000001');
