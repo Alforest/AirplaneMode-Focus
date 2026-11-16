@@ -142,7 +142,6 @@ const MapView: React.FC = () => {
     let disposed = false;
     let raf = 0;
     let lastPathUpdate = 0;
-    let lastFollow = 0;
     mapboxgl.accessToken = MAPBOX_TOKEN;
     const arc = greatCircleArc(departure.lat, departure.lon, destination.lat, destination.lon, 200);
     arcPointsRef.current = arc;
@@ -194,11 +193,12 @@ const MapView: React.FC = () => {
         const source = map.getSource('traveled-arc') as mapboxgl.GeoJSONSource | undefined;
         source?.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [...arc.slice(0, current.index), current.point] }, properties: {} });
       }
-      // Follow changes only the center. It never fights a user-selected zoom,
-      // and waits for zoom/pan animations to finish before moving again.
-      if (modeRef.current === 'follow' && now - lastFollow > 1000 && !map.isMoving()) {
-        lastFollow = now;
-        map.easeTo({ center: current.point, duration: 900, easing: t => t });
+      // Keep the camera and marker on the same animation-frame position.
+      // Chaining one-second easeTo calls chased stale positions and introduced
+      // a stop/catch-up pulse. Preserve explicit zoom/recenter animations;
+      // free exploration disables following via the gesture handlers above.
+      if (modeRef.current === 'follow' && !map.isMoving()) {
+        map.setCenter(current.point);
       }
       raf = requestAnimationFrame(tick);
     };
