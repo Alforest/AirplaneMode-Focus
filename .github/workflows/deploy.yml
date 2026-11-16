@@ -61,6 +61,8 @@ jobs:
 
       - run: npm run test:recovery
 
+      - run: npm run test:camera
+
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}

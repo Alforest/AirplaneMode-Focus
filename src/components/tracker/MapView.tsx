@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
+import { createFollowCamera } from '../../utils/followCamera';
 import { flightElapsed } from '../../lib/activeFlight';
 import { track } from '../../lib/analytics';
 import { motion } from 'framer-motion';
@@ -117,10 +118,12 @@ const MapView: React.FC = () => {
   const positionRef = useRef<[number, number]>([0, 0]);
   const modeRef = useRef<CameraMode>('route');
   const styleRef = useRef<MapStyle>('dark');
+  const followCamera = useRef(createFollowCamera());
 
   const chooseMode = (mode: CameraMode) => {
     const map = mapRef.current;
     if (!map || !loaded) return;
+    followCamera.current.release();
     modeRef.current = mode;
     setCameraMode(mode);
     map.stop();
@@ -131,6 +134,7 @@ const MapView: React.FC = () => {
   const changeZoom = (delta: number) => {
     const map = mapRef.current;
     if (!map || !loaded) return;
+    followCamera.current.release();
     if (modeRef.current === 'route') { modeRef.current = 'free'; setCameraMode('free'); }
     map.stop();
     map.zoomTo(Math.min(16, Math.max(1, map.getZoom() + delta)), { duration: 250 });
@@ -147,9 +151,9 @@ const MapView: React.FC = () => {
     arcPointsRef.current = arc;
     const totalKm = haversineKm(departure.lat, departure.lon, destination.lat, destination.lon);
     const timeline = getTimeline(useFlightStore.getState().durationMinutes);
-    const position = () => {
+    const position = (time = Date.now()) => {
       const state = useFlightStore.getState();
-      const progress = state.phase === 'landed' ? 1 : state.startTime ? flightElapsed(state.startTime, state.durationMinutes, state.speedMultiplier).progress : 0;
+      const progress = state.phase === 'landed' ? 1 : state.startTime ? flightElapsed(state.startTime, state.durationMinutes, state.speedMultiplier, time).progress : 0;
       const raw = arcFraction(progress, timeline, totalKm) * (arc.length - 1);
       const low = Math.min(Math.floor(raw), arc.length - 2);
       const fraction = raw - low;
@@ -173,6 +177,7 @@ const MapView: React.FC = () => {
     };
     const explore = (event: unknown) => {
       if (!(event as { originalEvent?: unknown }).originalEvent) return;
+      followCamera.current.release();
       modeRef.current = 'free'; setCameraMode('free');
     };
     map.on('dragstart', explore);
@@ -193,12 +198,8 @@ const MapView: React.FC = () => {
         const source = map.getSource('traveled-arc') as mapboxgl.GeoJSONSource | undefined;
         source?.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [...arc.slice(0, current.index), current.point] }, properties: {} });
       }
-      // Keep the camera and marker on the same animation-frame position.
-      // Chaining one-second easeTo calls chased stale positions and introduced
-      // a stop/catch-up pulse. Preserve explicit zoom/recenter animations;
-      // free exploration disables following via the gesture handlers above.
-      if (modeRef.current === 'follow' && !map.isMoving()) {
-        map.setCenter(current.point);
+      if (modeRef.current === 'follow') {
+        followCamera.current.update(map, time => position(time).point, now);
       }
       raf = requestAnimationFrame(tick);
     };
@@ -217,6 +218,7 @@ const MapView: React.FC = () => {
     resize.observe(mapContainerRef.current);
     return () => {
       disposed = true;
+      followCamera.current.release();
       resize.disconnect();
       cancelAnimationFrame(raf);
       origin.remove(); dest.remove(); plane.remove();
