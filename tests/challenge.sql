@@ -129,8 +129,43 @@ set local role anon;
 select pg_temp.expect_error('select * from public.user_profiles', 'guest cannot read profiles');
 select pg_temp.expect_error($q$select public.save_study_profile('Guest', 'JFK')$q$, 'guest cannot save profile');
 reset role;
--- Account deletion removes profile, enrollment, and flights.
+\ir ../supabase/migrations/202611160001_cloud_weekly_goals.sql
+set local request.jwt.claim.sub = '00000000-0000-4000-8000-000000000001';
+set local role authenticated;
+do $$
+declare initial jsonb; changed jsonb; stale jsonb; removed jsonb;
+begin
+  initial := public.save_weekly_study_goal('00000000-0000-4000-8000-000000000001', 300, null);
+  perform pg_temp.assert_true((initial->>'applied')::boolean, 'first goal creates server preference');
+  changed := public.save_weekly_study_goal('00000000-0000-4000-8000-000000000001', 600, (initial->>'revision')::uuid);
+  perform pg_temp.assert_true((changed->>'applied')::boolean and (changed->>'goal_minutes')::int = 600, 'matching revision updates goal');
+  stale := public.save_weekly_study_goal('00000000-0000-4000-8000-000000000001', 120, (initial->>'revision')::uuid);
+  perform pg_temp.assert_true(not (stale->>'applied')::boolean and (stale->>'goal_minutes')::int = 600, 'stale offline update cannot overwrite goal');
+  removed := public.save_weekly_study_goal('00000000-0000-4000-8000-000000000001', null, (changed->>'revision')::uuid);
+  perform pg_temp.assert_true((removed->>'applied')::boolean and removed->'goal_minutes' = 'null'::jsonb, 'removal retains a server marker');
+  stale := public.save_weekly_study_goal('00000000-0000-4000-8000-000000000001', 300, null);
+  perform pg_temp.assert_true(not (stale->>'applied')::boolean and stale->'goal_minutes' = 'null'::jsonb, 'legacy migration cannot resurrect removed goal');
+end;
+$$;
+select pg_temp.expect_error($q$select public.save_weekly_study_goal('00000000-0000-4000-8000-000000000001', 45, null)$q$, 'invalid half hour rejected');
+select pg_temp.expect_error($q$select public.save_weekly_study_goal('00000000-0000-4000-8000-000000000001', 10081, null)$q$, 'goal larger than a week rejected');
+select pg_temp.expect_error($q$select public.save_weekly_study_goal('00000000-0000-4000-8000-000000000002', 300, null)$q$, 'owner argument cannot target another account');
+select pg_temp.expect_error($q$update public.weekly_study_goals set goal_minutes = 600$q$, 'goal writes require validated RPC');
+reset role;
+set local request.jwt.claim.sub = '00000000-0000-4000-8000-000000000003';
+set local role authenticated;
+select pg_temp.assert_true((select count(*) = 0 from public.weekly_study_goals), 'cannot read another account goal');
+select public.save_weekly_study_goal('00000000-0000-4000-8000-000000000003', 120, null);
+reset role;
+set local request.jwt.claim.sub = '';
+set local role anon;
+select pg_temp.expect_error('select * from public.weekly_study_goals', 'guests cannot read server goals');
+select pg_temp.expect_error($q$select public.save_weekly_study_goal('00000000-0000-4000-8000-000000000001', 300, null)$q$, 'guests cannot save server goals');
+reset role;
+-- Account deletion removes profile, enrollment, flights, and goal.
+
 delete from auth.users where id = '00000000-0000-4000-8000-000000000003';
 select pg_temp.assert_true((select count(*) = 2 from public.user_profiles), 'account deletion cascades to profile');
+select pg_temp.assert_true((select count(*) = 1 from public.weekly_study_goals), 'account deletion cascades to goal');
 rollback;
 \echo 'Challenge scoring and access tests passed.'

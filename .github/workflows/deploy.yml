@@ -57,6 +57,8 @@ jobs:
 
       - run: npm run test:goals
 
+      - run: npm run test:analytics
+
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}

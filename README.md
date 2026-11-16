@@ -286,7 +286,7 @@ on another device; verify the departure default and challenge name; switch accou
 and verify no identity or stats mix; check the dialog at phone width.
 
 
-## Local weekly goals and landing rewards
+## Weekly goals and landing rewards
 
 The traveler passport has a weekly study target (2h, 5h, 10h presets or half-hour
 increments from 0.5h to 168h). Targets repeat each week; progress uses completed
@@ -294,11 +294,11 @@ flight history from Monday 00:00 in local time, including imported flights.
 The homepage and landing screen show progress, remaining time, and a completed state.
 No target is chosen automatically. Removing a target preserves flight history.
 
-This version stores targets only in `focusflight-weekly-goals-v1` browser storage,
-separated by account ID and guest mode. It does not modify the live database or sync
-targets across devices. Clearing site data removes targets. Flights still use the
-existing configured history sync. A preview flight therefore affects real history
-if you are signed in; use guest mode when experimenting with the development timer.
+Signed-in targets sync privately through `weekly_study_goals` in Supabase. Guest
+targets stay on the device and are never automatically imported. The v2 local cache
+preserves pending account edits for offline retry. A legacy v1 account target migrates
+only if no server record exists; a cloud value or removal marker takes precedence.
+A preview flight still affects real history if signed in; use guest mode for testing.
 
 Landing cards recognize a weekly target crossed by this flight, first flight, new
 country, a strictly longer personal best, and an extended study streak. Up to three
@@ -316,11 +316,13 @@ Force Land action; test sessions are saved to that guest history.
 ## Passport / weekly-goal analytics
 
 All custom events carry `experience_version: passport_goals_v1`. Production uses
-our existing PostHog browser identifier; development logs would-be events only.
+an anonymous browser identifier for guests and a stable `account:<Supabase user UUID>`
+identifier after sign-in; development logs would-be events only.
 Goal-editor and landing-reward exposure events use viewport visibility, not just component mounting.
-No identify call links the analytics identifier to a Google account. These events
-do not send emails, nicknames, account IDs, home-airport codes, or feedback free text.
-Goals remain device-local. Feedback is optional and submitted once per account/guest
+PostHog identify connects signed-in activity across sessions/devices and can merge
+prior anonymous browser activity. No emails, nicknames, home-airport codes, Google
+names/pictures, or feedback free text are sent. The internal account ID is sent as
+the analytics identity, not as a separate event property. Goals sync for accounts. Feedback is optional and submitted once per account/guest
 on this browser for this experience version; only positive/negative is sent.
 
 | Event | Properties / meaning |
@@ -350,7 +352,36 @@ sign-in funnel; home-airport adoption; saved goal distribution; goal achievement
 positive/negative feedback with response count; and D1/D7 completed-flight retention
 for goal savers versus other study users. Show save failures as a quality metric.
 Use the experience-version filter for custom events, but not the automatic `$pageview`
-denominator (it does not carry that property). Start the window at this deployment.
+denominator for historical data (older automatic pageviews lacked the property).
+New pageviews wait for auth resolution and also carry the experience property.
 Repeat use and time in a dialog are engagement signals, not satisfaction or causal
-proof. Feedback is a voluntary sample. Anonymous browser IDs do not deduplicate
-across devices or shared-browser accounts. Do not treat them as known accounts.
+proof. Feedback is a voluntary sample. Guest browser IDs do not deduplicate across devices. New signed-in identity tracking
+deduplicates accounts across devices; filter `identity_version=account_v1` to inspect
+the rollout. Historical anonymous data is not guaranteed to be fully backfilled.
+
+
+### Cloud-goal and identified-analytics release
+
+Apply `supabase/migrations/202611160001_cloud_weekly_goals.sql` before publishing.
+The goal table uses own-account RLS and a validated compare-and-swap save RPC; direct
+client writes are denied. The RPC also checks its explicit owner against auth.uid()
+to reject writes whose browser account switched while waiting for credentials.
+Goal removals retain null-valued server rows. Account deletion cascades to goals.
+
+Reads/retries run on sign-in, focus, reconnection, and every 30 seconds. Saves stay
+local until synced and have visible status. Revision conflicts adopt the cloud value
+and ask the user to review/save again, rather than overwriting a newer device edit.
+A local edit made during its own successful upload is rebased onto that response.
+
+Analytics starts with automatic pageviews disabled. After auth resolves, the identity
+controller resets stale/different account identities, identifies the current account,
+and sends the initial pageview plus any buffered events. Repeated auth/token events
+do not repeat identify/pageviews. Logout resets to a new anonymous browser identity.
+The existing experience filter `passport_goals_v1` remains valid; `identity_version`
+is `account_v1` for the new pipeline. Session recording and autocapture remain off.
+
+Run `npm run test:analytics`, `npm run test:goals`, and the existing test suites.
+SQL tests cover RLS, invalid goals, owner mismatch, stale revisions, removal markers,
+and account deletion. Browser release checks: signed-in activity on two devices
+should share a PostHog person; logout/account switching must keep people separate;
+goals should appear on the other device; stale offline edits should show a conflict.

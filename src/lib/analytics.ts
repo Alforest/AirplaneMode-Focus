@@ -1,3 +1,4 @@
+import { createAnalyticsIdentity } from './analyticsIdentity';
 import posthog from 'posthog-js';
 import { Airport } from '../data/airports';
 import { haversineKm } from '../utils/flightCalculations';
@@ -6,13 +7,24 @@ import { haversineKm } from '../utils/flightCalculations';
 // Analytics — thin PostHog wrapper. This is the ONLY file that imports
 // posthog; everything else calls track().
 //
-// Policy: anonymous only. No cookies (localStorage persistence), no
+// Policy: account IDs identify signed-in users; guests remain anonymous. No cookies (localStorage persistence), no
 // autocapture, no session recording, prod builds only. Without a
 // VITE_POSTHOG_KEY the whole module is a silent no-op, so local dev and
 // forks never send events.
 // ---------------------------------------------------------------------------
 
 let enabled = false;
+const identity = createAnalyticsIdentity({
+  getDistinctId: () => posthog.get_distinct_id(),
+  identify: id => posthog.identify(id),
+  reset: () => posthog.reset(),
+  capture: (event, props, instant) => posthog.capture(event, { experience_version: 'passport_goals_v1', identity_version: 'account_v1', ...props }, instant ? { transport: 'sendBeacon', send_instantly: true } : undefined),
+});
+
+export function setAnalyticsUser(userId: string | null): void {
+  // No SDK calls occur until production initialization completes.
+  identity.setUser(userId);
+}
 
 export function initAnalytics(): void {
   const key = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
@@ -22,7 +34,9 @@ export function initAnalytics(): void {
     api_host: (import.meta.env.VITE_POSTHOG_HOST as string | undefined) ?? 'https://us.i.posthog.com',
     persistence: 'localStorage',
     autocapture: false,
-    capture_pageview: true,
+    capture_pageview: false,
+    person_profiles: 'identified_only',
+    loaded: () => identity.ready(),
     capture_pageleave: false,
     disable_session_recording: true,
   });
@@ -42,7 +56,7 @@ export function track(
   }
   // instant: bypass the batch queue (~3s flush) — required for events fired
   // during pagehide, where the queued batch would die with the page
-  posthog.capture(event, { experience_version: 'passport_goals_v1', ...props }, opts?.instant ? { transport: 'sendBeacon', send_instantly: true } : undefined);
+  identity.capture(event, props, opts?.instant);
 }
 
 // ---------------------------------------------------------------------------

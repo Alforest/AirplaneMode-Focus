@@ -1,4 +1,6 @@
-import { track } from '../lib/analytics';
+import { syncWeeklyGoal } from '../lib/weeklyGoalSync';
+import { useWeeklyGoalStore } from '../store/weeklyGoalStore';
+import { track, setAnalyticsUser } from '../lib/analytics';
 import { useProfileStore } from '../store/profileStore';
 import { useAccountUI } from '../store/accountUIStore';
 import { useEffect } from 'react';
@@ -11,12 +13,13 @@ import { useHistoryStore } from '../store/historyStore';
 export function useAccount() {
   useEffect(() => {
     const client = supabase;
-    if (!client) return;
+    if (!client) { setAnalyticsUser(null); return; }
     let active = true;
     let loginRequested = false;
     const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
       const user = session?.user ?? null;
+      setAnalyticsUser(user?.id ?? null);
       useProfileStore.getState().setOwner(user?.id ?? null);
       useHistoryStore.getState().setOwner(user?.id ?? null);
       useAuthStore.setState({ user, ready: true, error: null, syncStatus: 'idle' });
@@ -26,12 +29,12 @@ export function useAccount() {
         useAccountUI.getState().open('oauth_return');
       }
       // Do not await Supabase API calls inside the auth callback (auth lock).
-      if (user) window.setTimeout(() => { if (active) { void syncHistory(); void retryChallengeCompletions(); void useProfileStore.getState().load(); } }, 0);
+      if (user) window.setTimeout(() => { if (active) { void syncHistory(); void retryChallengeCompletions(); void useProfileStore.getState().load(); void syncWeeklyGoal(); } }, 0);
     });
     void client.auth.getSession().then(({ error }) => {
-      if (active && error) useAuthStore.setState({ ready: true, error: 'Could not restore your account. Please sign in again.' });
+      if (active && error) { if (!useAuthStore.getState().ready) setAnalyticsUser(null); useAuthStore.setState({ ready: true, error: 'Could not restore your account. Please sign in again.' }); }
     }).catch(() => {
-      if (active) useAuthStore.setState({ ready: true, error: 'Could not restore your account. Please sign in again.' });
+      if (active) { if (!useAuthStore.getState().ready) setAnalyticsUser(null); useAuthStore.setState({ ready: true, error: 'Could not restore your account. Please sign in again.' }); }
     });
     try {
       if (sessionStorage.getItem('focusflight-open-account') === '1') {
@@ -48,7 +51,11 @@ export function useAccount() {
         record.pending && record.revision !== old?.[record.flight.id]?.revision
       )) void syncHistory();
     });
-    const retry = () => { void syncHistory(); void retryChallengeCompletions(); void useProfileStore.getState().load(); };
+    const unsubscribeGoals = useWeeklyGoalStore.subscribe((state, previous) => {
+      const owner = useAuthStore.getState().user?.id;
+      if (owner && state.pending[owner] && state.pending[owner]?.mutation !== previous.pending[owner]?.mutation) void syncWeeklyGoal();
+    });
+    const retry = () => { void syncHistory(); void retryChallengeCompletions(); void useProfileStore.getState().load(); void syncWeeklyGoal(); };
     window.addEventListener('online', retry);
     window.addEventListener('focus', retry);
     const timer = window.setInterval(retry, 30_000);
@@ -56,6 +63,7 @@ export function useAccount() {
       active = false;
       subscription.unsubscribe();
       unsubscribeHistory();
+      unsubscribeGoals();
       window.removeEventListener('online', retry);
       window.removeEventListener('focus', retry);
       window.clearInterval(timer);
