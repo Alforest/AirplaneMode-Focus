@@ -106,6 +106,8 @@ function fitRouteBounds(map: mapboxgl.Map, arc: [number, number][], duration: nu
 const MapView: React.FC = () => {
   const { departure, destination } = useFlightStore();
   const [mapStyle, setMapStyle] = useState<MapStyle>('dark');
+  const [controlsExpanded, setControlsExpanded] = useState(false);
+  const controlsId = React.useId();
   const [cameraMode, setCameraMode] = useState<CameraMode>('route');
   const [loaded, setLoaded] = useState(false);
   const [zoom, setZoom] = useState(2);
@@ -233,7 +235,11 @@ const MapView: React.FC = () => {
   const control = 'min-h-[44px] rounded-lg border px-3 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-40';
   return <div className="relative h-full w-full">
     <div ref={mapContainerRef} className="h-full w-full overflow-hidden rounded-2xl" style={{ minHeight: 300 }} />
-    <div className="absolute left-3 top-3 z-10 rounded-xl border border-gold/20 bg-navy/90 p-2 shadow-lg" aria-label="Map camera controls" role="group">
+    <div className={`absolute left-3 top-3 z-10 rounded-xl border border-gold/20 bg-navy/90 shadow-lg ${controlsExpanded ? 'p-2' : 'sm:p-2'}`} aria-label="Map camera controls" role="group">
+      <button type="button" aria-expanded={controlsExpanded} aria-controls={controlsId} onClick={() => setControlsExpanded(value => !value)} className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg px-3 text-xs text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold sm:hidden">
+        {controlsExpanded ? 'Hide controls' : 'Map controls'} <span aria-hidden="true">{controlsExpanded ? '▴' : '▾'}</span>
+      </button>
+      <div id={controlsId} className={controlsExpanded ? 'mt-2 sm:mt-0' : 'hidden sm:block'}>
       <div className="flex flex-col gap-2">
         <button type="button" disabled={!loaded} aria-pressed={cameraMode === 'route'} onClick={() => chooseMode('route')} className={`${control} ${cameraMode === 'route' ? 'border-gold/50 bg-gold/15 text-gold' : 'border-gold/15 text-muted-white/70'}`}>Full route</button>
         <button type="button" disabled={!loaded} aria-pressed={cameraMode === 'follow'} onClick={() => chooseMode('follow')} className={`${control} ${cameraMode === 'follow' ? 'border-gold/50 bg-gold/15 text-gold' : 'border-gold/15 text-muted-white/70'}`}>Follow plane</button>
@@ -243,6 +249,7 @@ const MapView: React.FC = () => {
         <button type="button" disabled={!loaded || zoom >= 16} aria-label="Zoom in" title="Zoom in" onClick={() => changeZoom(1)} className={`${control} flex-1 border-gold/15 text-lg text-gold`}>+</button>
       </div>
       <p className="mt-2 max-w-[112px] text-center text-[10px] text-muted-white/50" role="status">{cameraMode === 'route' ? 'Route overview' : cameraMode === 'follow' ? 'Following plane' : 'Explore map freely'}</p>
+      </div>
     </div>
     <div className="absolute right-3 top-3 z-10"><motion.button type="button" disabled={!loaded} onClick={changeStyle} whileTap={{ scale: 0.97 }} className="min-h-[44px] rounded-xl border border-white/15 bg-navy/90 px-3 text-xs text-muted-white/80 hover:text-gold disabled:opacity-40">{mapStyle === 'dark' ? 'Satellite view' : 'Dark view'}</motion.button></div>
   </div>;
