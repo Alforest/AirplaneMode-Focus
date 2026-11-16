@@ -12,7 +12,8 @@
     "test:history": "tsx --test tests/history.test.ts",
     "test:stats": "tsx --test tests/personalStats.test.ts",
     "test:goals": "tsx --test tests/weeklyGoals.test.ts",
-    "test:analytics": "tsx --test tests/analyticsIdentity.test.ts"
+    "test:analytics": "tsx --test tests/analyticsIdentity.test.ts",
+    "test:recovery": "tsx --test tests/flightRecovery.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

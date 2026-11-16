@@ -161,3 +161,8 @@ test('lost successful response resolves as synced when the cloud already has the
   assert.equal(store.getState().status['account-a'], 'synced');
   assert.equal(store.getState().pending['account-a'], undefined);
 });
+
+test('recovering an arrival from last week does not claim this week’s goal', () => {
+  const rewards = landingRewards([], flight('old-flight', 15, 300), 300, new Date(2026, 10, 16, 12));
+  assert.ok(!rewards.some(reward => reward.id === 'weekly-goal'));
+});

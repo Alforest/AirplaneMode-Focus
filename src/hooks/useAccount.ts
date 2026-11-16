@@ -1,3 +1,4 @@
+import { useFlightStore } from '../store/flightStore';
 import { syncWeeklyGoal } from '../lib/weeklyGoalSync';
 import { useWeeklyGoalStore } from '../store/weeklyGoalStore';
 import { track, setAnalyticsUser } from '../lib/analytics';
@@ -13,7 +14,7 @@ import { useHistoryStore } from '../store/historyStore';
 export function useAccount() {
   useEffect(() => {
     const client = supabase;
-    if (!client) { setAnalyticsUser(null); return; }
+    if (!client) { setAnalyticsUser(null); useFlightStore.getState().loadSavedFlight('guest'); return; }
     let active = true;
     let loginRequested = false;
     const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
@@ -23,6 +24,7 @@ export function useAccount() {
       useProfileStore.getState().setOwner(user?.id ?? null);
       useHistoryStore.getState().setOwner(user?.id ?? null);
       useAuthStore.setState({ user, ready: true, error: null, syncStatus: 'idle' });
+      useFlightStore.getState().loadSavedFlight(user?.id ?? 'guest');
       if (user && loginRequested) {
         track('sign_in_completed', { provider: 'google', signed_in: true });
         loginRequested = false;

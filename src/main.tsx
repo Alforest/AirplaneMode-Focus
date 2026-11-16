@@ -16,10 +16,11 @@ window.addEventListener('pagehide', () => {
   const { phase, departure, destination, durationMinutes, startTime } =
     useFlightStore.getState();
   if (phase !== 'tracker' || !startTime) return;
-  track('flight_abandoned', {
+  track('flight_interrupted', {
     ...routeProps(departure, destination, durationMinutes),
     elapsed_minutes: Math.round((Date.now() - startTime) / 60000),
     via: 'pagehide',
+    recovery_available: useFlightStore.getState().recoveryAvailable,
   }, { instant: true });
 });
 

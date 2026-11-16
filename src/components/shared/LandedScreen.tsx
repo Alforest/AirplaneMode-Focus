@@ -35,7 +35,7 @@ const Particle: React.FC<{ delay: number; x: number; color: string }> = ({ delay
 const CONFETTI_COLORS = ['#f0c040', '#e8a020', '#ffffff', '#d0d8e8', '#7ec8e3', '#ffd700'];
 
 const LandedScreen: React.FC = () => {
-  const { departure, destination, durationMinutes, flightInfo, sessionId, reset } = useFlightStore();
+  const { departure, destination, durationMinutes, flightInfo, sessionId, completedAt, reset } = useFlightStore();
   const challenge = useChallengeFlight();
   const addFlight = useHistoryStore(s => s.addFlight);
   const owner = useHistoryStore(state => state.owner);
@@ -70,12 +70,12 @@ const LandedScreen: React.FC = () => {
       destination: { iata: destination.iata, city: destination.city, country: destination.country, lat: destination.lat, lon: destination.lon },
       durationMinutes,
       distanceKm: totalDistKm,
-      date: history.flights.find(item => item.id === sessionId)?.date ?? new Date().toISOString(),
+      date: history.flights.find(item => item.id === sessionId)?.date ?? new Date(completedAt ?? Date.now()).toISOString(),
       flightNumber: flightInfo.flightNumber,
       airline: flightInfo.airline,
     };
     const goal = useWeeklyGoalStore.getState().goals[history.owner] ?? null;
-    const milestones = landingRewards(history.flights, flight, goal);
+    const milestones = landingRewards(history.flights, flight, goal, new Date());
     setRewards(milestones);
     if (!history.flights.some(item => item.id === sessionId)) {
       if (milestones.some(item => item.id === 'weekly-goal')) track('weekly_goal_achieved', { signed_in: history.owner !== 'guest', goal_minutes: goal });

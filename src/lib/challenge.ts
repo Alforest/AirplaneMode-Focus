@@ -19,7 +19,7 @@ type Registration = { owner: string; ready: Promise<boolean> };
 const registrations = new Map<string, Registration>();
 // Starts are serialized so a slower request cannot replace a newer flight.
 let startQueue: Promise<unknown> = Promise.resolve();
-export function registerChallengeFlight(id: string, minutes: number): void {
+export function registerChallengeFlight(id: string, minutes: number, onRegistered?: () => void): void {
   const owner = useAuthStore.getState().user?.id;
   if (!supabase || !owner || challengePhase(Date.now()) !== 'active') return;
   const client = supabase;
@@ -37,6 +37,7 @@ export function registerChallengeFlight(id: string, minutes: number): void {
         status: error ? 'error' : 'eligible',
         message: error ? 'Not counting toward the challenge. Join before takeoff, and connect online. Flights must finish before the deadline.' : 'Challenge flight registered. Stay signed in and connect at landing to count your time.',
       });
+      if (!error && registrations.has(id)) onRegistered?.();
       return !error;
     } catch {
       if (useChallengeFlight.getState().id === id) useChallengeFlight.setState({ status: 'error', message: 'Challenge registration unavailable. This flight will still save to your flight log.' });
@@ -107,3 +108,14 @@ export function invalidateChallengeFlight(id: string) {
 }
 
 export function forgetChallengeFlight(id: string) { registrations.delete(id); }
+
+
+export function restoreChallengeFlight(id: string, owner: string, eligible: boolean): void {
+  if (registrations.has(id)) return;
+  if (eligible && useAuthStore.getState().user?.id === owner) {
+    registrations.set(id, { owner, ready: Promise.resolve(true) });
+    useChallengeFlight.setState({ id, status: 'eligible', message: 'Challenge flight restored. Your original server start still applies; connect at landing before the deadline.' });
+  } else {
+    useChallengeFlight.setState({ id, status: 'idle', message: 'Flight restored to your private log. No confirmed challenge registration was saved for this flight.' });
+  }
+}

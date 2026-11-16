@@ -1,3 +1,4 @@
+import { flightElapsed } from '../lib/activeFlight';
 import { useEffect, useRef, useState } from 'react';
 import { useFlightStore } from '../store/flightStore';
 import { getTimeline, getFlightStatus } from '../utils/flightPhases';
@@ -25,8 +26,7 @@ export function useFlightProgress(): FlightProgress {
     const totalMs = durationMinutes * 60 * 1000;
 
     const tick = () => {
-      const elapsed = (Date.now() - startTime) * useFlightStore.getState().speedMultiplier;
-      const p = Math.min(elapsed / totalMs, 1);
+      const { progress: p } = flightElapsed(startTime, durationMinutes, useFlightStore.getState().speedMultiplier);
       setProgress(p);
 
       if (p >= 1 && !hasLanded.current) {
@@ -46,7 +46,7 @@ export function useFlightProgress(): FlightProgress {
   }, [startTime, durationMinutes, phase, landFlight]);
 
   const totalMs = durationMinutes * 60 * 1000;
-  const elapsed = startTime ? Math.min((Date.now() - startTime) * speedMultiplier, totalMs) : 0;
+  const elapsed = startTime ? flightElapsed(startTime, durationMinutes, speedMultiplier).elapsed : 0;
   const remaining = Math.max(totalMs - elapsed, 0);
 
   return {

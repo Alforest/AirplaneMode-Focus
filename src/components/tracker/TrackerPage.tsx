@@ -1,4 +1,6 @@
 import React, { Suspense, lazy, useState } from 'react';
+import FlightExitDialog from './FlightExitDialog';
+import { useFlightBackGuard } from '../../hooks/useFlightBackGuard';
 import { motion } from 'framer-motion';
 
 // Lazy: MapView pulls the ~1.7 MB mapbox-gl chunk — keep it off the landing
@@ -10,7 +12,6 @@ import FlightStats from './FlightStats';
 import AdSlot from './AdSlot';
 import { useFlightStore } from '../../store/flightStore';
 import { useFlightProgress } from '../../hooks/useFlightProgress';
-import { useIsPhone } from '../../hooks/useMediaQuery';
 
 // Floating countdown over the map — phones only, where the full timer panel
 // lives below the fold
@@ -75,33 +76,24 @@ const SplitFlapText: React.FC<{ text: string }> = ({ text }) => (
   </div>
 );
 
-const ZOOM_LEVELS: { zoom: number | 'fit'; label: string }[] = [
-  { zoom: 'fit', label: 'Route' },   // frame the whole flight path — camera never moves
-  { zoom: 4,  label: 'World' },
-  { zoom: 6,  label: 'Region' },
-  { zoom: 7,  label: 'Country' },
-  { zoom: 8.5, label: 'City' },
-  { zoom: 11,  label: 'Close' },
-];
-
 const TrackerPage: React.FC = () => {
-  const { departure, destination, flightInfo } = useFlightStore();
-  const isPhone = useIsPhone();
+  const { departure, destination, flightInfo, phase, recoveryAvailable } = useFlightStore();
+  const [exitOpen, setExitOpen] = useState(false);
   const challenge = useChallengeFlight();
   const sessionId = useFlightStore(state => state.sessionId);
-  const [zoomIdx, setZoomIdx] = useState(3); // default: "Country"
-  const [zoomOpen, setZoomOpen] = useState(false); // phones: slider collapsed by default
-
-  const targetZoom = ZOOM_LEVELS[zoomIdx].zoom;
+  useFlightBackGuard(phase === 'tracker', sessionId, () => setExitOpen(true));
 
   return (
     <div className="min-h-screen bg-navy flex flex-col">
+      <FlightExitDialog open={exitOpen} onClose={() => setExitOpen(false)} />
       {/* Top bar */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b border-gold/10 shrink-0"
       >
+        <button type="button" onClick={() => setExitOpen(true)} className="min-h-[44px] shrink-0 rounded-lg border border-gold/20 px-3 text-sm text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">← Back</button>
+
         {/* Left: flight info */}
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <div>
@@ -126,7 +118,7 @@ const TrackerPage: React.FC = () => {
         </div>
 
         {/* Right: seat */}
-        <div className="flex items-center gap-4 shrink-0">
+        <div className="hidden sm:flex items-center gap-4 shrink-0">
           <div className="text-right">
             <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest">Seat</div>
             <div className="font-mono text-gold font-bold">{flightInfo?.seat}</div>
@@ -146,80 +138,13 @@ const TrackerPage: React.FC = () => {
           {/* Map */}
           <div className="absolute inset-2 md:inset-4">
             <Suspense fallback={<div className="w-full h-full rounded-2xl bg-midnight/40" />}>
-              <MapView targetZoom={targetZoom} />
+              <MapView />
             </Suspense>
           </div>
 
           {/* Countdown floats over the map on phones */}
           <MobileTimerChip />
 
-          {/* Zoom slider — floats over the left edge of the map.
-              On phones it collapses to a single button so it doesn't cover
-              the map or crowd the countdown chip. */}
-          <div className="absolute left-4 md:left-7 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-0">
-            {isPhone && !zoomOpen ? (
-              <button
-                onClick={() => setZoomOpen(true)}
-                aria-label="Open zoom controls"
-                className="glass-card rounded-xl w-11 h-11 flex flex-col items-center justify-center gap-0.5"
-                style={{ border: '1px solid rgba(240,192,64,0.15)' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(240,192,64,0.8)" strokeWidth="2.2" strokeLinecap="round">
-                  <circle cx="11" cy="11" r="7" />
-                  <line x1="16.5" y1="16.5" x2="21" y2="21" />
-                </svg>
-                <span className="font-mono text-gold/60 text-[0.55rem] font-bold leading-none">
-                  {zoomIdx + 1}
-                </span>
-              </button>
-            ) : (
-              <div className="glass-card rounded-2xl px-2 py-3 flex flex-col items-center gap-1"
-                style={{ border: '1px solid rgba(240,192,64,0.12)' }}>
-                {/* Zoom label */}
-                <div className="font-mono text-gold/60 text-xs tracking-widest mb-1">
-                  {ZOOM_LEVELS[zoomIdx].label}
-                </div>
-                {/* Steps (top = most zoomed in, bottom = most zoomed out) */}
-                {[...ZOOM_LEVELS].reverse().map((level, reversedIdx) => {
-                  const actualIdx = ZOOM_LEVELS.length - 1 - reversedIdx;
-                  const isActive = actualIdx === zoomIdx;
-                  return (
-                    <button
-                      key={level.zoom}
-                      onClick={() => {
-                        setZoomIdx(actualIdx);
-                        if (isPhone) setZoomOpen(false); // picked a level → tuck away
-                      }}
-                      title={level.label}
-                      className={`w-8 h-8 md:w-7 md:h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                        isActive
-                          ? 'bg-gold text-navy'
-                          : 'text-muted-white/30 hover:text-gold hover:bg-gold/10'
-                      }`}
-                    >
-                      <span className="font-mono text-xs font-bold">
-                        {ZOOM_LEVELS.length - reversedIdx}
-                      </span>
-                    </button>
-                  );
-                })}
-                {/* Close (phones) / minus label (desktop) */}
-                {isPhone ? (
-                  <button
-                    onClick={() => setZoomOpen(false)}
-                    aria-label="Close zoom controls"
-                    className="mt-1 w-8 h-8 rounded-lg flex items-center justify-center text-muted-white/40 active:text-gold"
-                  >
-                    <span className="font-mono text-sm leading-none">✕</span>
-                  </button>
-                ) : (
-                  <div className="mt-1 flex flex-col items-center gap-0.5">
-                    <span className="font-mono text-muted-white/15 text-xs">−</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </motion.div>
 
         {/* Right panel: timer + stats */}
@@ -255,6 +180,8 @@ const TrackerPage: React.FC = () => {
               Phones on airplane mode means fewer interruptions. Stay focused — you're almost there.
             </div>
           </div>
+
+          {!recoveryAvailable && <p role="status" className="text-xs text-red-300">Recovery is unavailable in this browser. Keep this tab open to finish your session.</p>}
 
           <AdSlot />
 

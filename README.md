@@ -141,7 +141,7 @@ Guest mode works without Supabase configuration. To enable accounts:
   restore deleted flights. It clears flights already known on that device; sync before
   clearing to include newly completed flights from other devices.
 - Flight data is immutable once uploaded. Server deletion markers win over uploads.
-- This release does not resume an active timer across devices or validate leaderboard scores.
+- Active-flight recovery is local to the same browser and account; it does not resume across devices. Challenge scoring uses its separate server timer.
 
 ### Release verification
 
@@ -385,3 +385,40 @@ SQL tests cover RLS, invalid goals, owner mismatch, stale revisions, removal mar
 and account deletion. Browser release checks: signed-in activity on two devices
 should share a PostHog person; logout/account switching must keep people separate;
 goals should appear on the other device; stale offline edits should show a conflict.
+
+
+## Map controls, safe exits, and flight recovery
+
+The tracker has labeled Full route / Follow plane controls and direct +/− zoom.
+Full route frames the great-circle arc, including unwrapped antimeridian crossings.
+Follow updates center only, preserving zoom even on the ground. Dragging, pinching,
+scrolling, or rotating switches to free exploration. Follow plane recenters and resumes
+tracking. The map loop starts on load without delayed timers; cleanup cancels the loop,
+removes markers/map, and disconnects the resize observer, including StrictMode remounts.
+
+Back (including browser Back while tracking) opens an exit dialog: Keep studying,
+Save & return to terminal, or End flight without logging. Saving doesn't pause time.
+Refresh/close stores a device-local snapshot and emits `flight_interrupted`, not an
+abandonment. The next visit shows a resume/arrival card after auth resolves. Account
+snapshots are offered only to their original account; guest snapshots remain separate.
+A different account cannot inherit an active timer. This does not sync across devices.
+
+Snapshots contain route, boarding information, original/rebased timer, speed, session
+ID, completion time, and confirmed challenge registration. `focusflight-active-flight-v1:`
+keys are scoped per owner. No new Supabase migration is required. Recovery uses wall
+clock elapsed time, not a paused countdown. Arrival after an offline finish logs the
+scheduled completion date, not the return date, and cannot claim a later week's goal.
+Completion remains deduplicated by the same session UUID. Challenge recovery never
+creates a new server start: only a previously confirmed registration is eligible;
+existing server deadline/elapsed/overlap checks still apply at landing.
+
+Explicit end/discard clears its recovery record. Starting a different flight warns
+that it replaces the saved one. A stale tab cannot erase or overwrite a newer recovery
+record. If browser storage is unavailable, the tracker says recovery is unavailable
+and Save & return is disabled. Clear browser data to remove cached recovery state.
+
+Run `npm run test:recovery` plus existing suites. Browser QA: check zoom before and
+after takeoff, free pan, Follow, Full route, style switching, mobile touch controls;
+use Back/cancel/save/end; reload midway; reopen after the scheduled finish; switch
+accounts; verify duplicate reloads don't duplicate the history or challenge score.
+Use guest mode for development/Force Land checks because signed-in test flights sync.

@@ -1,15 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
+import { flightElapsed } from '../../lib/activeFlight';
+import { track } from '../../lib/analytics';
 import { motion } from 'framer-motion';
 import { useFlightStore } from '../../store/flightStore';
 import { greatCircleArc, haversineKm } from '../../utils/flightCalculations';
-import { getTimeline, arcFraction, isOnGround } from '../../utils/flightPhases';
+import { getTimeline, arcFraction } from '../../utils/flightPhases';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string;
-
-// Camera zoom while the plane is on the ground (boarding/taxi/rollout) —
-// close enough that dark-v11 renders the actual runways and taxiways
-const GROUND_ZOOM = 13.2;
 
 const STYLES = {
   dark: 'mapbox://styles/mapbox/dark-v11',
@@ -92,306 +90,162 @@ function makePlaneEl() {
   return el;
 }
 
-interface MapViewProps {
-  /** Mapbox zoom level, or 'fit' — frame the whole route and never move the camera */
-  targetZoom?: number | 'fit';
-}
+type CameraMode = 'route' | 'follow' | 'free';
 
 function fitRouteBounds(map: mapboxgl.Map, arc: [number, number][], duration: number) {
   if (!arc.length) return;
-  const lons = arc.map(p => p[0]);
-  const lats = arc.map(p => p[1]);
-  map.fitBounds(
-    [[Math.min(...lons) - 3, Math.min(...lats) - 3], [Math.max(...lons) + 3, Math.max(...lats) + 3]],
-    { padding: 60, duration }
-  );
+  const lons = arc.map(point => point[0]);
+  const lats = arc.map(point => point[1]);
+  const width = map.getContainer().clientWidth;
+  map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], {
+    padding: { top: 100, left: width < 500 ? 35 : 65, right: 35, bottom: 65 },
+    duration, maxZoom: 10, retainPadding: false,
+  });
 }
 
-const MapView: React.FC<MapViewProps> = ({ targetZoom }) => {
+const MapView: React.FC = () => {
   const { departure, destination } = useFlightStore();
   const [mapStyle, setMapStyle] = useState<MapStyle>('dark');
-
+  const [cameraMode, setCameraMode] = useState<CameraMode>('route');
+  const [loaded, setLoaded] = useState(false);
+  const [zoom, setZoom] = useState(2);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markerRef = useRef<mapboxgl.Marker | null>(null);
-  const originMarkerRef = useRef<mapboxgl.Marker | null>(null);
-  const destMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const arcPointsRef = useRef<[number, number][]>([]);
-  const initializedRef = useRef(false);
+  const positionRef = useRef<[number, number]>([0, 0]);
+  const modeRef = useRef<CameraMode>('route');
   const styleRef = useRef<MapStyle>('dark');
-  const hasZoomedInRef = useRef(false);
-  const rafRef = useRef<number>(0);
-  const lastCameraPanRef = useRef(0);
-  const targetZoomRef = useRef<number | 'fit'>(targetZoom ?? 7);
-  const onGroundRef = useRef(true);
 
-  // Keep targetZoomRef in sync and apply immediately if map is ready
-  useEffect(() => {
-    targetZoomRef.current = targetZoom ?? 7;
+  const chooseMode = (mode: CameraMode) => {
     const map = mapRef.current;
-    if (!map || !hasZoomedInRef.current) return;
-    if (targetZoom === 'fit') {
-      // Frame the whole route; the animation loop leaves the camera alone
-      fitRouteBounds(map, arcPointsRef.current, 1200);
-      return;
-    }
-    if (onGroundRef.current) return; // ground camera owns zoom until takeoff
-    map.easeTo({ zoom: targetZoom ?? 7, duration: 600 });
-  }, [targetZoom]);
+    if (!map || !loaded) return;
+    modeRef.current = mode;
+    setCameraMode(mode);
+    map.stop();
+    if (mode === 'route') fitRouteBounds(map, arcPointsRef.current, 600);
+    else if (mode === 'follow') map.easeTo({ center: positionRef.current, zoom: Math.max(map.getZoom(), 6), padding: { top: 0, left: 0, right: 0, bottom: 0 }, duration: 600 });
+    track('map_view_changed', { mode });
+  };
+  const changeZoom = (delta: number) => {
+    const map = mapRef.current;
+    if (!map || !loaded) return;
+    if (modeRef.current === 'route') { modeRef.current = 'free'; setCameraMode('free'); }
+    map.stop();
+    map.zoomTo(Math.min(16, Math.max(1, map.getZoom() + delta)), { duration: 250 });
+    track('map_zoom_changed', { direction: delta > 0 ? 'in' : 'out', mode: modeRef.current });
+  };
 
-  // Main map init + rAF animation loop
   useEffect(() => {
-    if (!departure || !destination) return;
-    if (initializedRef.current) return;
-    if (!mapContainerRef.current) return;
-    if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'pk.your_token_here') return;
-
-    initializedRef.current = true;
+    if (!departure || !destination || !mapContainerRef.current || mapRef.current || !MAPBOX_TOKEN || MAPBOX_TOKEN === 'pk.your_token_here') return;
+    let disposed = false;
+    let raf = 0;
+    let lastPathUpdate = 0;
+    let lastFollow = 0;
     mapboxgl.accessToken = MAPBOX_TOKEN;
-
-    const arc = greatCircleArc(
-      departure.lat, departure.lon,
-      destination.lat, destination.lon,
-      200  // more points = smoother interpolation
-    );
+    const arc = greatCircleArc(departure.lat, departure.lon, destination.lat, destination.lon, 200);
     arcPointsRef.current = arc;
-
     const totalKm = haversineKm(departure.lat, departure.lon, destination.lat, destination.lon);
-    const tl = getTimeline(useFlightStore.getState().durationMinutes);
-
-    const midIdx = Math.floor(arc.length / 2);
-
-    const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: STYLES.dark,
-      center: arc[midIdx],
-      zoom: 2,
-      pitch: 0,
-      attributionControl: false,
-    });
+    const timeline = getTimeline(useFlightStore.getState().durationMinutes);
+    const position = () => {
+      const state = useFlightStore.getState();
+      const progress = state.phase === 'landed' ? 1 : state.startTime ? flightElapsed(state.startTime, state.durationMinutes, state.speedMultiplier).progress : 0;
+      const raw = arcFraction(progress, timeline, totalKm) * (arc.length - 1);
+      const low = Math.min(Math.floor(raw), arc.length - 2);
+      const fraction = raw - low;
+      const from = arc[low]; const to = arc[low + 1];
+      return { point: [from[0] + (to[0] - from[0]) * fraction, from[1] + (to[1] - from[1]) * fraction] as [number, number], index: low + 1, from, to };
+    };
+    const initial = position();
+    positionRef.current = initial.point;
+    const map = new mapboxgl.Map({ container: mapContainerRef.current, style: STYLES.dark, center: initial.point, zoom: 2, minZoom: 1, maxZoom: 16, attributionControl: false });
     mapRef.current = map;
-
+    styleRef.current = 'dark';
+    modeRef.current = 'route';
+    setCameraMode('route');
+    setMapStyle('dark');
+    const origin = new mapboxgl.Marker({ ...AIRPORT_MARKER_OPTS, element: makeAirportMarkerEl(departure.iata, '#f0c040') }).setLngLat(arc[0]).addTo(map);
+    const dest = new mapboxgl.Marker({ ...AIRPORT_MARKER_OPTS, element: makeAirportMarkerEl(destination.iata, '#e8a020') }).setLngLat(arc[arc.length - 1]).addTo(map);
+    const plane = new mapboxgl.Marker({ element: makePlaneEl(), anchor: 'center' }).setLngLat(initial.point).addTo(map);
+    const layers = () => {
+      if (disposed || map.getSource('full-arc')) return;
+      addLayers(map, arc, position().index, styleRef.current);
+    };
+    const explore = (event: unknown) => {
+      if (!(event as { originalEvent?: unknown }).originalEvent) return;
+      modeRef.current = 'free'; setCameraMode('free');
+    };
+    map.on('dragstart', explore);
+    map.on('zoomstart', explore);
+    map.on('rotatestart', explore);
+    map.on('zoomend', () => { if (!disposed) setZoom(map.getZoom()); });
+    map.on('style.load', layers);
+    const tick = () => {
+      if (disposed) return;
+      const current = position();
+      positionRef.current = current.point;
+      plane.setLngLat(current.point);
+      const svg = plane.getElement().querySelector('svg') as SVGElement | null;
+      if (svg) svg.style.transform = `rotate(${Math.atan2(current.to[0] - current.from[0], current.to[1] - current.from[1]) * 180 / Math.PI}deg)`;
+      const now = Date.now();
+      if (now - lastPathUpdate > 100) {
+        lastPathUpdate = now;
+        const source = map.getSource('traveled-arc') as mapboxgl.GeoJSONSource | undefined;
+        source?.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [...arc.slice(0, current.index), current.point] }, properties: {} });
+      }
+      // Follow changes only the center. It never fights a user-selected zoom,
+      // and waits for zoom/pan animations to finish before moving again.
+      if (modeRef.current === 'follow' && now - lastFollow > 1000 && !map.isMoving()) {
+        lastFollow = now;
+        map.easeTo({ center: current.point, duration: 900, easing: t => t });
+      }
+      raf = requestAnimationFrame(tick);
+    };
     map.on('load', () => {
-      addLayers(map, arc, 0);
-
-      originMarkerRef.current = new mapboxgl.Marker({ ...AIRPORT_MARKER_OPTS, element: makeAirportMarkerEl(departure.iata, '#f0c040') })
-        .setLngLat([departure.lon, departure.lat])
-        .addTo(map);
-
-      destMarkerRef.current = new mapboxgl.Marker({ ...AIRPORT_MARKER_OPTS, element: makeAirportMarkerEl(destination.iata, '#e8a020') })
-        .setLngLat([destination.lon, destination.lat])
-        .addTo(map);
-
-      markerRef.current = new mapboxgl.Marker({ element: makePlaneEl(), anchor: 'center' })
-        .setLngLat(arc[0])
-        .addTo(map);
-
-      // Fit full route overview
-      fitRouteBounds(map, arc, 1800);
-
-      // After overview, zoom in and start the animation loop
-      setTimeout(() => {
-        hasZoomedInRef.current = true;
-
-        // Get current position from store at this moment
-        const store = useFlightStore.getState();
-        const { startTime, durationMinutes, speedMultiplier } = store;
-        const totalMs = durationMinutes * 60 * 1000;
-        const progress = startTime ? Math.min(((Date.now() - startTime) * speedMultiplier) / totalMs, 1) : 0;
-        const af0 = arcFraction(progress, tl, totalKm);
-        const startIdx = Math.min(Math.floor(af0 * (arc.length - 1)), arc.length - 1);
-        onGroundRef.current = isOnGround(progress, tl);
-
-        if (targetZoomRef.current !== 'fit') {
-          map.easeTo({
-            center: arc[startIdx] as [number, number],
-            zoom: onGroundRef.current ? GROUND_ZOOM : targetZoomRef.current,
-            duration: 2600,
-          });
-        }
-
-        // Start rAF loop — reads store directly, never triggers React renders
-        const tick = () => {
-          const { startTime: st, durationMinutes: dur, phase, speedMultiplier } = useFlightStore.getState();
-          if (phase !== 'tracker' || !st) {
-            rafRef.current = requestAnimationFrame(tick);
-            return;
-          }
-
-          const p = Math.min(((Date.now() - st) * speedMultiplier) / (dur * 60 * 1000), 1);
-
-          // Remap session progress → arc position (parked / taxi / air / rollout)
-          const ground = isOnGround(p, tl);
-          onGroundRef.current = ground;
-          const af = arcFraction(p, tl, totalKm);
-
-          // Interpolate smoothly between arc points so position is continuous
-          const rawIdx = af * (arc.length - 1);
-          const idxLow = Math.min(Math.floor(rawIdx), arc.length - 2);
-          const idxHigh = idxLow + 1;
-          const frac = rawIdx - idxLow;
-
-          const lo = arc[idxLow];
-          const hi = arc[idxHigh];
-          const pos: [number, number] = [
-            lo[0] + (hi[0] - lo[0]) * frac,
-            lo[1] + (hi[1] - lo[1]) * frac,
-          ];
-
-          // Update plane marker position
-          if (markerRef.current) {
-            markerRef.current.setLngLat(pos);
-
-            // Rotate plane to face direction of travel
-            const rotation = Math.atan2(hi[0] - lo[0], hi[1] - lo[1]) * (180 / Math.PI);
-            const svg = markerRef.current.getElement().querySelector('svg') as SVGElement | null;
-            if (svg) svg.style.transform = `rotate(${rotation}deg)`;
-          }
-
-          // Update traveled-arc path (throttled to ~10fps — no need for 60fps GeoJSON updates)
-          const now = Date.now();
-          if (now - lastCameraPanRef.current > 100) {
-            if (map.getSource('traveled-arc')) {
-              (map.getSource('traveled-arc') as mapboxgl.GeoJSONSource).setData({
-                type: 'Feature',
-                geometry: {
-                  type: 'LineString',
-                  // include interpolated current position as final point
-                  coordinates: [...arc.slice(0, idxHigh), pos],
-                },
-                properties: {},
-              });
-            }
-          }
-
-          // Camera pan — only every 4 seconds to avoid interrupting easeTo.
-          // On the ground the camera stays tight on the airfield; the zoom-out
-          // to the user's chosen level doubles as the takeoff moment.
-          if (now - lastCameraPanRef.current > 4000) {
-            lastCameraPanRef.current = now;
-            if (targetZoomRef.current !== 'fit') {
-              map.easeTo({
-                center: pos,
-                zoom: ground ? GROUND_ZOOM : targetZoomRef.current,
-                duration: 4500,
-                easing: (t) => t,
-              });
-            }
-          }
-
-          rafRef.current = requestAnimationFrame(tick);
-        };
-
-        rafRef.current = requestAnimationFrame(tick);
-      }, 2800);
+      if (disposed) return;
+      layers();
+      setLoaded(true);
+      fitRouteBounds(map, arc, 0);
+      raf = requestAnimationFrame(tick);
     });
-
+    const resize = new ResizeObserver(() => {
+      if (disposed) return;
+      map.resize();
+      if (map.loaded() && modeRef.current === 'route') fitRouteBounds(map, arc, 0);
+    });
+    resize.observe(mapContainerRef.current);
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      map.remove();
-      mapRef.current = null;
-      initializedRef.current = false;
-      hasZoomedInRef.current = false;
+      disposed = true;
+      resize.disconnect();
+      cancelAnimationFrame(raf);
+      origin.remove(); dest.remove(); plane.remove();
+      map.remove(); mapRef.current = null;
+      setLoaded(false);
     };
   }, [departure, destination]);
 
-  // Style switch
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !departure || !destination) return;
-    if (styleRef.current === mapStyle) return;
-    styleRef.current = mapStyle;
-
-    const arc = arcPointsRef.current;
-    const { startTime, durationMinutes, speedMultiplier } = useFlightStore.getState();
-    const totalMs = durationMinutes * 60 * 1000;
-    const progress = startTime ? Math.min(((Date.now() - startTime) * speedMultiplier) / totalMs, 1) : 0;
-    const totalKm = haversineKm(departure.lat, departure.lon, destination.lat, destination.lon);
-    const af = arcFraction(progress, getTimeline(durationMinutes), totalKm);
-    const currentIdx = Math.min(Math.floor(af * (arc.length - 1)), arc.length - 1);
-
-    map.setStyle(STYLES[mapStyle]);
-
-    map.once('style.load', () => {
-      addLayers(map, arc, currentIdx, mapStyle);
-
-      originMarkerRef.current?.remove();
-      destMarkerRef.current?.remove();
-      markerRef.current?.remove();
-
-      originMarkerRef.current = new mapboxgl.Marker({ ...AIRPORT_MARKER_OPTS, element: makeAirportMarkerEl(departure.iata, '#f0c040') })
-        .setLngLat([departure.lon, departure.lat])
-        .addTo(map);
-
-      destMarkerRef.current = new mapboxgl.Marker({ ...AIRPORT_MARKER_OPTS, element: makeAirportMarkerEl(destination.iata, '#e8a020') })
-        .setLngLat([destination.lon, destination.lat])
-        .addTo(map);
-
-      markerRef.current = new mapboxgl.Marker({ element: makePlaneEl(), anchor: 'center' })
-        .setLngLat(arc[currentIdx] as [number, number])
-        .addTo(map);
-    });
-  }, [mapStyle, departure, destination]);
-
-  if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'pk.your_token_here') {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-midnight/80 rounded-2xl">
-        <div className="text-center p-8">
-          <div className="text-4xl mb-4">🗺️</div>
-          <p className="font-mono text-gold/80 text-sm mb-2">Mapbox token required</p>
-          <p className="font-sans text-muted-white/40 text-xs max-w-xs">
-            Add your <code className="text-gold/60">VITE_MAPBOX_ACCESS_TOKEN</code> to a{' '}
-            <code className="text-gold/60">.env</code> file in the project root.
-          </p>
-          {departure && destination && (
-            <div className="mt-6 font-mono text-muted-white/50 text-sm">
-              <p>{departure.iata} → {destination.iata}</p>
-              <p className="text-muted-white/30 text-xs mt-1">
-                ~{Math.round(haversineKm(departure.lat, departure.lon, destination.lat, destination.lon)).toLocaleString()} km
-              </p>
-            </div>
-          )}
-        </div>
+  const changeStyle = () => {
+    const next = mapStyle === 'dark' ? 'satellite' : 'dark';
+    styleRef.current = next;
+    setMapStyle(next);
+    mapRef.current?.setStyle(STYLES[next]);
+  };
+  if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'pk.your_token_here') return <div className="flex h-full w-full items-center justify-center rounded-2xl bg-midnight/80 p-6 text-center text-sm text-muted-white/60">The map is unavailable. Your study timer is still running.</div>;
+  const control = 'min-h-[44px] rounded-lg border px-3 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-40';
+  return <div className="relative h-full w-full">
+    <div ref={mapContainerRef} className="h-full w-full overflow-hidden rounded-2xl" style={{ minHeight: 300 }} />
+    <div className="absolute left-3 top-3 z-10 rounded-xl border border-gold/20 bg-navy/90 p-2 shadow-lg" aria-label="Map camera controls" role="group">
+      <div className="flex flex-col gap-2">
+        <button type="button" disabled={!loaded} aria-pressed={cameraMode === 'route'} onClick={() => chooseMode('route')} className={`${control} ${cameraMode === 'route' ? 'border-gold/50 bg-gold/15 text-gold' : 'border-gold/15 text-muted-white/70'}`}>Full route</button>
+        <button type="button" disabled={!loaded} aria-pressed={cameraMode === 'follow'} onClick={() => chooseMode('follow')} className={`${control} ${cameraMode === 'follow' ? 'border-gold/50 bg-gold/15 text-gold' : 'border-gold/15 text-muted-white/70'}`}>Follow plane</button>
       </div>
-    );
-  }
-
-  return (
-    <div className="relative w-full h-full">
-      <div
-        ref={mapContainerRef}
-        className="w-full h-full rounded-2xl overflow-hidden"
-        style={{ minHeight: 300 }}
-      />
-
-      {/* Style toggle */}
-      <div className="absolute top-3 right-3 z-10">
-        <motion.button
-          onClick={() => setMapStyle(s => s === 'dark' ? 'satellite' : 'dark')}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={`flex items-center gap-2 px-3 py-2 rounded-xl font-mono text-xs tracking-widest uppercase backdrop-blur-sm transition-all duration-200 ${
-            mapStyle === 'satellite'
-              ? 'bg-gold/30 text-gold border border-gold/50'
-              : 'bg-black/50 text-muted-white/70 border border-white/10 hover:border-gold/30 hover:text-gold'
-          }`}
-        >
-          {mapStyle === 'satellite' ? (
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>
-          ) : (
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="2" y1="12" x2="22" y2="12"/>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-            </svg>
-          )}
-          {mapStyle === 'satellite' ? 'Dark' : 'Satellite'}
-        </motion.button>
+      <div className="mt-2 flex gap-2">
+        <button type="button" disabled={!loaded || zoom <= 1} aria-label="Zoom out" title="Zoom out" onClick={() => changeZoom(-1)} className={`${control} flex-1 border-gold/15 text-lg text-gold`}>−</button>
+        <button type="button" disabled={!loaded || zoom >= 16} aria-label="Zoom in" title="Zoom in" onClick={() => changeZoom(1)} className={`${control} flex-1 border-gold/15 text-lg text-gold`}>+</button>
       </div>
+      <p className="mt-2 max-w-[112px] text-center text-[10px] text-muted-white/50" role="status">{cameraMode === 'route' ? 'Route overview' : cameraMode === 'follow' ? 'Following plane' : 'Explore map freely'}</p>
     </div>
-  );
+    <div className="absolute right-3 top-3 z-10"><motion.button type="button" disabled={!loaded} onClick={changeStyle} whileTap={{ scale: 0.97 }} className="min-h-[44px] rounded-xl border border-white/15 bg-navy/90 px-3 text-xs text-muted-white/80 hover:text-gold disabled:opacity-40">{mapStyle === 'dark' ? 'Satellite view' : 'Dark view'}</motion.button></div>
+  </div>;
 };
 
 export default MapView;

@@ -1,5 +1,6 @@
 import { useAuthStore } from '../../store/authStore';
 import AccountButton from '../account/AccountButton';
+import ResumeFlightCard from './ResumeFlightCard';
 import PersonalWelcome from '../account/PersonalWelcome';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -107,6 +108,7 @@ const Hero: React.FC = () => {
 
           {/* Left — headline + check-in */}
           <div>
+            <ResumeFlightCard key={accountId ?? 'guest'} />
             <PersonalWelcome />
             <motion.h1
               initial={{ opacity: 0, y: 20 }}

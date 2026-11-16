@@ -23,7 +23,7 @@
   <main id="content">
     <div class="eyebrow">Your information</div>
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: November 15, 2026</p>
+    <p class="updated">Last updated: November 16, 2026</p>
     <div class="intro">
       <p>FocusFlight is a study timer that turns focus sessions into simulated flights. You can study without an account. If you choose to sign in with Google, we save your completed flights so you can access your flight log on other devices.</p>
       <p>This policy explains how FocusFlight handles information when you use focusflight.io. Contact the FocusFlight operator at <a href="mailto:admin@focusflight.io">admin@focusflight.io</a> with privacy questions or requests.</p>
@@ -46,7 +46,7 @@
     <p>Your account flight log is private. Joining a study challenge opts you into a public leaderboard showing your chosen nickname, rank, and challenge study total. Challenge records are separate from private history, and imported history does not contribute to challenge scores. We do not use Google account information to personalize advertisements. We do not intentionally send Google email addresses, names, or profile pictures to our analytics integration; the internal FocusFlight account identifier is used for signed-in analytics as described above.</p>
 
     <h2>3. Local storage and sign-out</h2>
-    <p>The app stores guest history, cached account history, pending sync changes, pending challenge completions, optional weekly study targets, whether you have submitted passport feedback, and authentication session information in browser storage. Signed-in weekly targets are stored privately in Supabase and cached on your device, with pending edits retained for retry. Guest targets stay on that device and are not automatically imported into an account. Removing an account target retains a cloud removal marker so older devices cannot silently restore it. Account caches are separated by user ID. Signing out returns to the guest log but does not erase cached account history from that device. On a shared device, sign out and clear the site’s browser data when finished.</p>
+    <p>The app stores guest history, cached account history, pending sync changes, pending challenge completions, device-local active-flight recovery snapshots (route, boarding details, timer, session identifier, and challenge registration state), optional weekly study targets, whether you have submitted passport feedback, and authentication session information in browser storage. Signed-in weekly targets are stored privately in Supabase and cached on your device, with pending edits retained for retry. Guest targets stay on that device and are not automatically imported into an account. Removing an account target retains a cloud removal marker so older devices cannot silently restore it. Recovery snapshots and account caches are separated by user ID. A saved flight keeps counting elapsed time while the app is closed and can be resumed only from the same browser and account; recovery snapshots do not sync across devices. Signing out returns to the guest log but does not erase cached account history from that device. On a shared device, sign out and clear the site’s browser data when finished.</p>
     <p>Clearing site data removes local copies and may erase unsynced flights. It does not by itself delete history or goals already stored in your account.</p>
 
     <h2>4. Providers and sharing</h2>

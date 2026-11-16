@@ -4,15 +4,20 @@ import { useFlightStore } from '../../store/flightStore';
 import BoardingPassCard from './BoardingPassCard';
 
 const BoardingConfirm: React.FC = () => {
-  const { departure, destination, flightInfo, durationMinutes, startFlight, setPhase } = useFlightStore();
+  const { departure, destination, flightInfo, durationMinutes, startFlight, setPhase, savedFlight } = useFlightStore();
 
   const [boarding, setBoarding] = React.useState(false);
+  const boardingTimer = React.useRef<number>();
+  React.useEffect(() => () => window.clearTimeout(boardingTimer.current), []);
 
   if (!departure || !destination || !flightInfo) return null;
 
   const handleBoard = () => {
+    if (boarding) return;
     setBoarding(true);
-    setTimeout(() => startFlight(), 900);
+    boardingTimer.current = window.setTimeout(() => {
+      if (useFlightStore.getState().phase === 'boarding') startFlight();
+    }, 900);
   };
 
   return (
@@ -47,6 +52,8 @@ const BoardingConfirm: React.FC = () => {
             {Math.floor(durationMinutes / 60)}h{durationMinutes % 60 > 0 ? ` ${durationMinutes % 60}m` : ''} study session to {destination.city}
           </p>
         </motion.div>
+
+        {savedFlight && <p className="mx-auto mb-6 max-w-md rounded-xl border border-gold/20 bg-midnight p-4 text-sm text-gold/80">Starting this flight replaces your saved {savedFlight.departure.iata} → {savedFlight.destination.iata} flight without logging that unfinished session. Return to the terminal to resume it instead.</p>}
 
         {/* Single boarding pass */}
         <div className="max-w-md mx-auto">
