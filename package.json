@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && tsx scripts/prerenderLanding.tsx",
     "preview": "vite preview",
     "data:airports": "tsx scripts/buildAirports.ts",
     "data:routes": "tsx scripts/buildAirlineRoutes.ts",

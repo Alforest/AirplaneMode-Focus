@@ -422,3 +422,32 @@ after takeoff, free pan, Follow, Full route, style switching, mobile touch contr
 use Back/cancel/save/end; reload midway; reopen after the scheduled finish; switch
 accounts; verify duplicate reloads don't duplicate the history or challenge score.
 Use guest mode for development/Force Land checks because signed-in test flights sync.
+
+
+### Search visibility and study guides
+
+The landing page title, canonical URL, social previews, and JSON-LD live in
+`index.html`. `npm run build` also renders the existing `HowItWorks` component into
+`dist/index.html`, making the explanation, FAQ, and footer links available without
+JavaScript. The flight app stays client-rendered. A separate hydrated content root
+shows this section only during the landing phase and hides it on the contact screen.
+The build deliberately does not render account data or saved flights.
+
+Two standalone, mobile-friendly guides are built as static HTML using the existing
+legal-page stylesheet:
+
+- `/study-with-airplane-mode/` — preparing devices and materials for a study session.
+- `/plan-a-focus-session/` — choosing a task, time window, and suitable flight.
+
+They are linked from the homepage footer and from each other, have their own
+metadata, and are included in `public/sitemap.xml`. They load no app, analytics,
+advertising, or map JavaScript. Add any future public guide to Vite's HTML inputs
+and the sitemap. Keep FAQ JSON-LD aligned with the visible FAQ.
+
+After deployment, verify `https://focusflight.io/` in Google Search Console,
+submit `https://focusflight.io/sitemap.xml`, and inspect the homepage and both
+guides. Check the rendered HTML and indexing status, then monitor queries,
+impressions, and clicks before making further keyword changes. Run PageSpeed
+Insights on the public homepage and use its measured results to prioritize
+performance work. Search Console verification requires the site owner's account;
+no verification token is included in this repository.

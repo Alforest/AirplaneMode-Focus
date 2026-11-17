@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import LandingContent from './components/landing/LandingContent';
 import { initAnalytics, track, routeProps } from './lib/analytics';
 import { initAds } from './lib/ads';
 import { useFlightStore } from './store/flightStore';
@@ -29,3 +30,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>
 );
+
+// This independent root preserves build-rendered marketing content while the
+// flight app remains client-rendered. Development has no prerendered markup.
+const landingContent = document.getElementById('landing-content')!;
+const content = <React.StrictMode><LandingContent /></React.StrictMode>;
+if (landingContent.querySelector('section')) {
+  ReactDOM.hydrateRoot(landingContent, content);
+} else {
+  ReactDOM.createRoot(landingContent).render(content);
+}

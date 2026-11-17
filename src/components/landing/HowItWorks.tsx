@@ -74,7 +74,7 @@ const HowItWorks: React.FC = () => {
           {STEPS.map((s, i) => (
             <motion.div
               key={s.code}
-              initial={{ opacity: 0, y: 16 }}
+              initial={false}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
@@ -127,6 +127,12 @@ const HowItWorks: React.FC = () => {
             FocusFlight · study like you're flying
           </span>
           <nav aria-label="Footer" className="flex flex-wrap justify-center items-center gap-3">
+            <a href="study-with-airplane-mode/" className="font-mono text-muted-white/60 hover:text-gold text-xs uppercase tracking-[0.15em] transition-colors px-2 py-2 focus-visible:outline focus-visible:outline-gold rounded">
+              Airplane mode guide
+            </a>
+            <a href="plan-a-focus-session/" className="font-mono text-muted-white/60 hover:text-gold text-xs uppercase tracking-[0.15em] transition-colors px-2 py-2 focus-visible:outline focus-visible:outline-gold rounded">
+              Focus session guide
+            </a>
             <a href="#contact" className="font-mono text-muted-white/60 hover:text-gold text-xs uppercase tracking-[0.15em] transition-colors px-2 py-2 focus-visible:outline focus-visible:outline-gold rounded">
               Contact
             </a>

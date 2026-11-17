@@ -12,7 +12,7 @@ export default defineConfig({
   build: {
     target: 'es2020',
     rollupOptions: {
-      input: ['index.html', 'privacy/index.html', 'terms/index.html'],
+      input: ['index.html', 'privacy/index.html', 'terms/index.html', 'study-with-airplane-mode/index.html', 'plan-a-focus-session/index.html'],
       output: {
         manualChunks(id) {
           if (id.includes('/src/data/')) return 'flight-data';

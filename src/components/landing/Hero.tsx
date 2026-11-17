@@ -7,7 +7,6 @@ import { motion } from 'framer-motion';
 import CloudBackground from '../shared/CloudBackground';
 import InputForm from './InputForm';
 import DepartureBoard from './DepartureBoard';
-import HowItWorks from './HowItWorks';
 import ChallengeSection, { ChallengeBanner } from '../challenge/ChallengeSection';
 import FlightHistorySection from '../history/FlightHistorySection';
 
@@ -125,8 +124,8 @@ const Hero: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.45 }}
               className="text-muted-white/50 text-base sm:text-lg mb-8 sm:mb-10 font-sans font-light tracking-wide"
             >
-              Phone on airplane mode. Pick a real flight —
-              land when the work is done.
+              A free study timer for focused work. Phone on airplane mode,
+              pick a real flight, and study until you land.
             </motion.p>
 
             <motion.div
@@ -181,7 +180,6 @@ const Hero: React.FC = () => {
 
     <ChallengeSection />
     <FlightHistorySection />
-    <HowItWorks />
     </>
   );
 };

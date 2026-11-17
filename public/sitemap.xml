@@ -15,4 +15,10 @@
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
+  <url>
+    <loc>https://focusflight.io/study-with-airplane-mode/</loc>
+  </url>
+  <url>
+    <loc>https://focusflight.io/plan-a-focus-session/</loc>
+  </url>
 </urlset>
