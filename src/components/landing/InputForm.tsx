@@ -233,7 +233,7 @@ const InputForm: React.FC = () => {
           <p className={`text-xs font-sans transition-colors duration-300 ${idle ? 'text-muted-white/50' : 'text-muted-white/30'}`}>
             {value.length === 0
               ? 'Type your 3-letter airport code — JFK, LHR, MAD…'
-              : 'Real routes — the flight you pick sets your study duration.'}
+              : 'Real routes — the flight you pick sets your focus duration.'}
           </p>
         )}
       </div>

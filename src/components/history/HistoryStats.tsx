@@ -42,7 +42,7 @@ const HistoryStats: React.FC = () => {
       ...flights.map(f => f.destination.iata),
     ]).size;
 
-    // Format total study time
+    // Format total focus time
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
     const timeStr = h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
@@ -74,7 +74,7 @@ const HistoryStats: React.FC = () => {
       ),
     },
     {
-      label: 'Hours Studied',
+      label: 'Hours Focused',
       value: stats!.timeStr,
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

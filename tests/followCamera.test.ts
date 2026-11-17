@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createFollowCamera, type FollowMap, type MapPoint } from '../src/utils/followCamera';
+import { createIdleFollow, createFollowCamera, type FollowMap, type MapPoint } from '../src/utils/followCamera';
 
 test('uses overlapping native eases aimed ahead, rather than jumping each frame', () => {
   const follow = createFollowCamera();
@@ -53,4 +53,31 @@ test('stationary or landed targets do not keep restarting camera animations', ()
   const map: FollowMap = { isMoving: () => false, easeTo: () => count++ };
   for (let time = 0; time < 3000; time += 16) follow.update(map, () => [10, 20], time);
   assert.equal(count, 1);
+});
+
+
+test('idle follow waits ten seconds after exploration ends and resumes only once', () => {
+  const idle = createIdleFollow();
+  assert.equal(idle.take(50_000), false);
+  idle.schedule(60_000);
+  assert.equal(idle.take(69_999), false);
+  assert.equal(idle.take(70_000), true);
+  assert.equal(idle.take(80_000), false);
+});
+
+test('a new gesture cancels the pending return and gets a fresh idle window', () => {
+  const idle = createIdleFollow();
+  idle.schedule(0);
+  idle.cancel(); // Another gesture begins before the old deadline.
+  assert.equal(idle.take(20_000), false); // A long drag must stay under user control.
+  idle.schedule(25_000);
+  assert.equal(idle.take(34_999), false);
+  assert.equal(idle.take(35_000), true);
+});
+
+test('choosing another camera mode or unmounting cancels the pending return', () => {
+  const idle = createIdleFollow();
+  idle.schedule(0);
+  idle.cancel();
+  assert.equal(idle.take(10_000), false);
 });

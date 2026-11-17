@@ -20,12 +20,12 @@ export function ChallengeBanner() {
   // While restoring/checking an account, avoid briefly prompting existing members.
   if (!supabase || !ready || challengePhase(now) !== 'active' || (user && membership !== false)) return null;
   return (
-    <aside aria-label="Study challenge" className="relative z-10 mx-5 sm:mx-6 mb-20 rounded-xl border border-gold/25 bg-midnight/90 p-4 sm:p-5 lg:mx-auto lg:w-[calc(100%-3rem)] lg:max-w-6xl">
+    <aside aria-label="Focus challenge" className="relative z-10 mx-5 sm:mx-6 mb-20 rounded-xl border border-gold/25 bg-midnight/90 p-4 sm:p-5 lg:mx-auto lg:w-[calc(100%-3rem)] lg:max-w-6xl">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-mono text-[0.65rem] uppercase tracking-widest text-gold/70">Syncing and challenges are here</p>
           <h2 className="mt-1 font-serif text-xl text-gold">Pre-Thanksgiving Crunch <span aria-hidden="true">✈</span></h2>
-          <p className="mt-1 text-sm text-muted-white/70">Get your work done before the holiday. Sync your flights and join the study-time leaderboard.</p>
+          <p className="mt-1 text-sm text-muted-white/70">Get your work done before the holiday. Sync your flights and join the focus-time leaderboard.</p>
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <a href="#challenge" className={buttonClass}>Join the challenge</a>
@@ -116,7 +116,7 @@ export default function ChallengeSection() {
   };
 
   return (
-    <section id="challenge" aria-labelledby="challenge-title" className="scroll-mt-6 mx-auto max-w-6xl px-5 sm:px-6 py-12 sm:py-16">
+    <section id="challenge" tabIndex={-1} aria-labelledby="challenge-title" className="focus:outline-none scroll-mt-6 mx-auto max-w-6xl px-5 sm:px-6 py-12 sm:py-16">
       <div className="rounded-2xl border border-gold/20 bg-midnight/70 p-5 sm:p-8">
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
@@ -130,7 +130,7 @@ export default function ChallengeSection() {
           </span>
         </div>
 
-        <p className="mt-6 text-sm leading-relaxed text-muted-white/60">Ranked by total study time on completed challenge flights. Join before takeoff, stay signed in to the same account, and be online at takeoff and landing. Flights must land before the deadline. Imported history and accelerated flights do not count. Starting another flight replaces your active challenge flight. Equal study time shares a rank. This is a friendly challenge, with no prizes.</p>
+        <p className="mt-6 text-sm leading-relaxed text-muted-white/60">Ranked by total focus time on completed challenge flights. Join before takeoff, stay signed in to the same account, and be online at takeoff and landing. Flights must land before the deadline. Imported history and accelerated flights do not count. Starting another flight replaces your active challenge flight. Equal focus time shares a rank. This is a friendly challenge, with no prizes.</p>
 
         {phase === 'active' && !board?.me && (
           <div className="mt-6 rounded-xl border border-gold/15 p-4 sm:p-5">
@@ -141,7 +141,7 @@ export default function ChallengeSection() {
               <p className="mt-3 text-xs text-muted-white/60">By using FocusFlight, you agree to our <a className="underline text-gold" href="terms/">Terms</a>. Read our <a className="underline text-gold" href="privacy/">Privacy Policy</a>.</p>
             </> : <form onSubmit={event => void join(event)}>
               {profile ? <div className="mb-3"><p className="text-sm text-gold">Joining as {profile.nickname}</p><button type="button" onClick={() => openAccount('challenge_profile')} className="mt-1 text-xs text-gold/70 underline">Edit your traveler profile</button></div> : <label htmlFor="challenge-nickname" className="block text-sm text-muted-white">Choose your public nickname</label>}
-              <p id="nickname-help" className="mt-1 text-xs text-muted-white/60">Your nickname, rank, and challenge study total will be public. Your email and routes stay private. Use 3–20 letters, numbers, spaces, hyphens or underscores. No profanity or slurs.</p>
+              <p id="nickname-help" className="mt-1 text-xs text-muted-white/60">Your nickname, rank, and challenge focus total will be public. Your email and routes stay private. Use 3–20 letters, numbers, spaces, hyphens or underscores. No profanity or slurs.</p>
               <div className="mt-3 flex flex-wrap gap-3">
                 {!profile && <input id="challenge-nickname" aria-describedby="nickname-help" required minLength={3} maxLength={20} pattern="[A-Za-z0-9_ \-]{3,20}" autoComplete="off" value={nickname} onChange={event => setNickname(event.target.value)} className="min-w-0 w-full sm:w-64 rounded-lg border border-gold/25 bg-navy px-3 py-2 text-muted-white focus:outline focus:outline-2 focus:outline-gold" placeholder="e.g. CloudScholar" />}
                 <button disabled={joining || loading || !board} className={buttonClass}>{joining ? 'Joining…' : 'Join the challenge'}</button>
@@ -157,7 +157,7 @@ export default function ChallengeSection() {
         </div>}
 
         <div className="mt-8 flex flex-wrap justify-between items-center gap-3">
-          <h3 className="font-serif text-xl text-muted-white">{phase === 'ended' ? 'Final leaderboard' : 'Study-time leaderboard'}</h3>
+          <h3 className="font-serif text-xl text-muted-white">{phase === 'ended' ? 'Final leaderboard' : 'Focus-time leaderboard'}</h3>
           <span className="text-xs text-muted-white/60">Top 10</span>
         </div>
         {loading && <p className="mt-4 text-sm text-muted-white/60" role="status">Loading leaderboard…</p>}
@@ -165,14 +165,14 @@ export default function ChallengeSection() {
         {!loading && board?.entries.length === 0 && <p className="mt-4 rounded-lg border border-gold/10 p-5 text-sm text-muted-white/60">{phase === 'ended' ? 'This challenge has ended with no participants.' : 'The runway is clear. Be the first to join.'}</p>}
         {!!board?.entries.length && <div className="mt-4 overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <caption className="sr-only">Challenge rankings by completed study time</caption>
-            <thead className="font-mono text-xs text-muted-white/50"><tr><th scope="col" className="py-3 pr-3">Rank</th><th scope="col" className="py-3 pr-3">Traveler</th><th scope="col" className="py-3 text-right">Study time</th></tr></thead>
+            <caption className="sr-only">Challenge rankings by completed focus time</caption>
+            <thead className="font-mono text-xs text-muted-white/50"><tr><th scope="col" className="py-3 pr-3">Rank</th><th scope="col" className="py-3 pr-3">Traveler</th><th scope="col" className="py-3 text-right">Focus time</th></tr></thead>
             <tbody>{board.entries.slice(0, 10).map(entry => <tr key={entry.nickname} className={`border-t border-gold/10 ${entry.is_you ? 'bg-gold/5 text-gold' : 'text-muted-white/80'}`}>
               <td className="py-3 pr-3 font-mono">#{entry.position}</td><th scope="row" className="py-3 pr-3 font-normal break-words">{entry.nickname}{entry.is_you && <span className="ml-2 text-xs text-gold">You</span>}</th><td className="py-3 text-right font-mono whitespace-nowrap">{studyTime(entry.minutes)}</td>
             </tr>)}</tbody>
           </table>
         </div>}
-        <p className="mt-4 text-xs text-muted-white/50">Standings refresh every 30 seconds. Flight times are checked against server elapsed time; the timer cannot verify attention or studying.</p>
+        <p className="mt-4 text-xs text-muted-white/50">Standings refresh every 30 seconds. Flight times are checked against server elapsed time; the timer cannot verify attention or focus.</p>
       </div>
     </section>
   );

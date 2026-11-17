@@ -10,6 +10,7 @@ import { useWeeklyGoalStore } from '../../store/weeklyGoalStore';
 import { landingRewards, LandingReward } from '../../utils/landingRewards';
 import { WeeklyGoalProgress } from '../account/WeeklyGoal';
 import SupportWidget from './SupportWidget';
+import { supabase } from '../../lib/supabase';
 
 // Confetti particle
 const Particle: React.FC<{ delay: number; x: number; color: string }> = ({ delay, x, color }) => (
@@ -37,6 +38,10 @@ const CONFETTI_COLORS = ['#f0c040', '#e8a020', '#ffffff', '#d0d8e8', '#7ec8e3', 
 const LandedScreen: React.FC = () => {
   const { departure, destination, durationMinutes, flightInfo, sessionId, completedAt, reset } = useFlightStore();
   const challenge = useChallengeFlight();
+  const returnToTerminal = (section: 'terminal' | 'challenge' = 'terminal') => {
+    window.location.hash = section;
+    reset();
+  };
   const addFlight = useHistoryStore(s => s.addFlight);
   const owner = useHistoryStore(state => state.owner);
   const [rewards, setRewards] = useState<LandingReward[]>([]);
@@ -99,6 +104,11 @@ const LandedScreen: React.FC = () => {
 
       {/* Content */}
       <div className="relative z-10 text-center w-full max-w-xl shrink-0 mx-auto px-5 sm:px-6 py-10 my-auto">
+        <nav aria-label="After your flight" className="mb-6 grid grid-cols-2 items-center gap-2">
+          <button type="button" onClick={() => returnToTerminal()} className="min-h-[44px] rounded-lg px-3 text-xs text-muted-white/80 underline underline-offset-4 hover:text-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">Return to terminal</button>
+          {supabase && <button type="button" onClick={() => returnToTerminal('challenge')} className="min-h-[44px] rounded-lg border border-gold/25 px-3 text-xs text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">Challenges &amp; leaderboard</button>}
+        </nav>
+
         {/* Plane icon */}
         <motion.div
           initial={{ scale: 0, rotate: -45 }}
@@ -142,7 +152,7 @@ const LandedScreen: React.FC = () => {
           className="glass-card rounded-2xl px-4 sm:px-8 py-6 mt-8 grid grid-cols-3 gap-2 sm:gap-6"
         >
           <div className="text-center">
-            <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest mb-1">Studied</div>
+            <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest mb-1">Focused</div>
             <div className="font-mono text-gold text-lg sm:text-xl font-bold">
               {formatDuration(durationMinutes)}
             </div>
@@ -206,7 +216,7 @@ const LandedScreen: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.1 }}
-          onClick={reset}
+          onClick={() => returnToTerminal()}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           className="mt-10 bg-gold hover:bg-amber text-navy font-mono font-bold

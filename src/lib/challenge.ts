@@ -79,7 +79,7 @@ export function retryChallengeCompletions(): Promise<void> {
         const { error } = await client.rpc('finish_challenge_flight', { p_id: id });
         const rejected = error?.code === 'P0001' && error.message !== 'Flight has not finished yet.';
         if (!error || rejected) {
-          if (useChallengeFlight.getState().id === id) useChallengeFlight.setState({ status: error ? 'error' : 'saved', message: error ? 'This flight was not eligible for challenge time. Your private flight log is unaffected.' : 'Study time added to your challenge total.' });
+          if (useChallengeFlight.getState().id === id) useChallengeFlight.setState({ status: error ? 'error' : 'saved', message: error ? 'This flight was not eligible for challenge time. Your private flight log is unaffected.' : 'Focus time added to your challenge total.' });
           const pending = readPending();
           pending[owner] = (pending[owner] ?? []).filter(item => item !== id);
           writePending(pending);

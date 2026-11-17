@@ -241,7 +241,7 @@ const DeparturesBoard: React.FC = () => {
             {departure.city}
           </h2>
           <p className="text-muted-white/30 font-sans text-sm mt-1">
-            {flights.length} flights · pick one — its duration is your study session
+            {flights.length} flights · pick one — its duration is your focus session
           </p>
         </motion.div>
 

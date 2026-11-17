@@ -17,7 +17,7 @@ const STEPS = [
   {
     code: '02',
     title: 'Pick a real flight',
-    body: 'Browse actual nonstop routes from that airport. The flight time is your study time: a 2-hour hop or a 9-hour long-haul.',
+    body: 'Browse actual nonstop routes from that airport. The flight time is your focus time: a 2-hour hop or a 9-hour long-haul.',
   },
   {
     code: '03',
@@ -34,7 +34,7 @@ const STEPS = [
 const FAQ = [
   {
     q: 'What is FocusFlight?',
-    a: 'A free, gamified study timer. Instead of setting "45 minutes", you board a real flight route and study until it lands — the flight metaphor makes long focus sessions feel like a journey instead of a grind.',
+    a: 'A free, gamified focus timer for work, study, reading, or any task. Instead of setting "45 minutes", you board a real flight route and focus until it lands — the flight metaphor makes long focus sessions feel like a journey instead of a grind.',
   },
   {
     q: 'Are the flights real?',
@@ -124,7 +124,7 @@ const HowItWorks: React.FC = () => {
           style={{ borderTop: '1px solid rgba(240,192,64,0.07)' }}
         >
           <span className="font-mono text-muted-white/20 text-xs">
-            FocusFlight · study like you're flying
+            FocusFlight · focus like you're flying
           </span>
           <nav aria-label="Footer" className="flex flex-wrap justify-center items-center gap-3">
             <a href="study-with-airplane-mode/" className="font-mono text-muted-white/60 hover:text-gold text-xs uppercase tracking-[0.15em] transition-colors px-2 py-2 focus-visible:outline focus-visible:outline-gold rounded">

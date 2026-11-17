@@ -8,6 +8,21 @@ export interface FollowMap {
 // doesn't emit an end/start pair. Predicting the endpoint avoids chasing an
 // already-old position. For constant-speed flight, each segment has the same
 // velocity even when frame rates or the retarget interval vary.
+// Separate idle tracking from Mapbox so gesture cancellation and repeated
+// interactions can be checked without starting a map or waiting in real time.
+export function createIdleFollow(delay = 10_000) {
+  let resumeAt: number | null = null;
+  return {
+    cancel() { resumeAt = null; },
+    schedule(now: number) { resumeAt = now + delay; },
+    take(now: number) {
+      if (resumeAt === null || now < resumeAt) return false;
+      resumeAt = null;
+      return true;
+    },
+  };
+}
+
 export function createFollowCamera() {
   const duration = 800;
   const interval = 200;

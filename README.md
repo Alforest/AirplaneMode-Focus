@@ -1,6 +1,6 @@
 # FocusFlight
 
-A gamified study timer where your study session becomes a flight. Enter your departure airport, pick a real flight from its split-flap departure board — the flight's duration is your study duration — then track your "flight" on a live globe: animated plane, countdown timer, simulated altitude and speed, and a celebration screen when you land.
+A gamified focus timer for work, study, reading, and other tasks, where your focus session becomes a flight. Enter your departure airport, pick a real flight from its split-flap departure board — the flight's duration is your focus duration — then track your "flight" on a live globe: animated plane, countdown timer, simulated altitude and speed, and a celebration screen when you land.
 
 Your completed flights are saved locally and shown on a rotating globe with glowing arc routes.
 
@@ -225,7 +225,7 @@ shared ranks, deadline enforcement, and anonymous access to final standings.
 After applying the migration, verify in a normal browser:
 
 1. Guest: banner links to the leaderboard; empty standings are inviting; Google sign-in
-   remains optional for the study timer.
+   remains optional for the focus timer.
 2. Sign in, choose a nickname, and join. Confirm nickname/rank/total appear and email
    does not. A second account cannot claim the same nickname ignoring case.
 3. Complete a real-time flight and wait for the next refresh. Its study minutes count
@@ -288,7 +288,7 @@ and verify no identity or stats mix; check the dialog at phone width.
 
 ## Weekly goals and landing rewards
 
-The traveler passport has a weekly study target (2h, 5h, 10h presets or half-hour
+The traveler passport has a weekly focus goal (2h, 5h, 10h presets or half-hour
 increments from 0.5h to 168h). Targets repeat each week; progress uses completed
 flight history from Monday 00:00 in local time, including imported flights.
 The homepage and landing screen show progress, remaining time, and a completed state.
@@ -301,7 +301,7 @@ only if no server record exists; a cloud value or removal marker takes precedenc
 A preview flight still affects real history if signed in; use guest mode for testing.
 
 Landing cards recognize a weekly target crossed by this flight, first flight, new
-country, a strictly longer personal best, and an extended study streak. Up to three
+country, a strictly longer personal best, and an extended focus streak. Up to three
 milestones appear; a normal session still gets a positive acknowledgment. The just-
 saved flight is excluded from historical comparisons so rendering it again cannot
 double count its time. These are private motivational summaries, not leaderboard
@@ -396,7 +396,7 @@ scrolling, or rotating switches to free exploration. Follow plane recenters and 
 tracking. The map loop starts on load without delayed timers; cleanup cancels the loop,
 removes markers/map, and disconnects the resize observer, including StrictMode remounts.
 
-Back (including browser Back while tracking) opens an exit dialog: Keep studying,
+Back (including browser Back while tracking) opens an exit dialog: Keep focusing,
 Save & return to terminal, or End flight without logging. Saving doesn't pause time.
 Refresh/close stores a device-local snapshot and emits `flight_interrupted`, not an
 abandonment. The next visit shows a resume/arrival card after auth resolves. Account
@@ -451,3 +451,24 @@ impressions, and clicks before making further keyword changes. Run PageSpeed
 Insights on the public homepage and use its measured results to prioritize
 performance work. Search Console verification requires the site owner's account;
 no verification token is included in this repository.
+
+
+### Navigation and focus language
+
+The goal shortcut opens the traveler passport directly at **Your weekly focus goal**,
+with keyboard focus on that heading. Normal passport entry still opens at the top.
+The close button stays visible while scrolling. Guest goal links use the same shortcut.
+
+On phone screens (below 640px), finishing a manual map gesture schedules camera follow
+for 10 seconds later. A new gesture cancels that deadline until movement ends again.
+Explicitly choosing Full route cancels the automatic return, desktop exploration stays
+manual, and leaving the tracker clears the pending return. The follow-camera regression
+suite covers idle timing and cancellation.
+
+The landing screen offers Return to terminal and, when challenges are configured,
+Challenges & leaderboard at the top. Navigation waits for the homepage transition to
+finish before scrolling and focusing its target. Book Another Flight remains available.
+
+Core UI and homepage metadata describe FocusFlight as a focus timer for work, study,
+reading, and more. Study guides remain specific examples of how to use it; storage keys,
+analytics event names, and database/RPC identifiers retain their existing names.

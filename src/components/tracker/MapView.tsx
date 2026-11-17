@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import { createFollowCamera } from '../../utils/followCamera';
+import { createFollowCamera, createIdleFollow } from '../../utils/followCamera';
+import { useIsPhone } from '../../hooks/useMediaQuery';
 import { flightElapsed } from '../../lib/activeFlight';
 import { track } from '../../lib/analytics';
 import { motion } from 'framer-motion';
@@ -119,10 +120,18 @@ const MapView: React.FC = () => {
   const modeRef = useRef<CameraMode>('route');
   const styleRef = useRef<MapStyle>('dark');
   const followCamera = useRef(createFollowCamera());
+  const idleFollow = useRef(createIdleFollow());
+  const isPhone = useIsPhone();
+  const phoneRef = useRef(isPhone);
+  useEffect(() => {
+    phoneRef.current = isPhone;
+    idleFollow.current.cancel();
+  }, [isPhone]);
 
   const chooseMode = (mode: CameraMode) => {
     const map = mapRef.current;
     if (!map || !loaded) return;
+    idleFollow.current.cancel();
     followCamera.current.release();
     modeRef.current = mode;
     setCameraMode(mode);
@@ -177,12 +186,18 @@ const MapView: React.FC = () => {
     };
     const explore = (event: unknown) => {
       if (!(event as { originalEvent?: unknown }).originalEvent) return;
+      idleFollow.current.cancel();
       followCamera.current.release();
       modeRef.current = 'free'; setCameraMode('free');
     };
     map.on('dragstart', explore);
     map.on('zoomstart', explore);
     map.on('rotatestart', explore);
+    // Start the idle window after movement ends, so a long gesture never
+    // causes the camera to snap back while someone is still exploring.
+    map.on('moveend', () => {
+      if (!disposed && phoneRef.current && modeRef.current === 'free') idleFollow.current.schedule(Date.now());
+    });
     map.on('zoomend', () => { if (!disposed) setZoom(map.getZoom()); });
     map.on('style.load', layers);
     const tick = () => {
@@ -193,6 +208,12 @@ const MapView: React.FC = () => {
       const svg = plane.getElement().querySelector('svg') as SVGElement | null;
       if (svg) svg.style.transform = `rotate(${Math.atan2(current.to[0] - current.from[0], current.to[1] - current.from[1]) * 180 / Math.PI}deg)`;
       const now = Date.now();
+      if (phoneRef.current && modeRef.current === 'free' && useFlightStore.getState().phase === 'tracker' && !map.isMoving() && idleFollow.current.take(now)) {
+        followCamera.current.release();
+        modeRef.current = 'follow';
+        setCameraMode('follow');
+        map.easeTo({ center: current.point, zoom: Math.max(map.getZoom(), 6), padding: { top: 0, left: 0, right: 0, bottom: 0 }, duration: 600 });
+      }
       if (now - lastPathUpdate > 100) {
         lastPathUpdate = now;
         const source = map.getSource('traveled-arc') as mapboxgl.GeoJSONSource | undefined;
@@ -218,6 +239,7 @@ const MapView: React.FC = () => {
     resize.observe(mapContainerRef.current);
     return () => {
       disposed = true;
+      idleFollow.current.cancel();
       followCamera.current.release();
       resize.disconnect();
       cancelAnimationFrame(raf);
@@ -233,7 +255,7 @@ const MapView: React.FC = () => {
     setMapStyle(next);
     mapRef.current?.setStyle(STYLES[next]);
   };
-  if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'pk.your_token_here') return <div className="flex h-full w-full items-center justify-center rounded-2xl bg-midnight/80 p-6 text-center text-sm text-muted-white/60">The map is unavailable. Your study timer is still running.</div>;
+  if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'pk.your_token_here') return <div className="flex h-full w-full items-center justify-center rounded-2xl bg-midnight/80 p-6 text-center text-sm text-muted-white/60">The map is unavailable. Your focus timer is still running.</div>;
   const control = 'min-h-[44px] rounded-lg border px-3 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold disabled:opacity-40';
   return <div className="relative h-full w-full">
     <div ref={mapContainerRef} className="h-full w-full overflow-hidden rounded-2xl" style={{ minHeight: 300 }} />
@@ -250,7 +272,7 @@ const MapView: React.FC = () => {
         <button type="button" disabled={!loaded || zoom <= 1} aria-label="Zoom out" title="Zoom out" onClick={() => changeZoom(-1)} className={`${control} flex-1 border-gold/15 text-lg text-gold`}>−</button>
         <button type="button" disabled={!loaded || zoom >= 16} aria-label="Zoom in" title="Zoom in" onClick={() => changeZoom(1)} className={`${control} flex-1 border-gold/15 text-lg text-gold`}>+</button>
       </div>
-      <p className="mt-2 max-w-[112px] text-center text-[10px] text-muted-white/50" role="status">{cameraMode === 'route' ? 'Route overview' : cameraMode === 'follow' ? 'Following plane' : 'Explore map freely'}</p>
+      <p className="mt-2 max-w-[112px] text-center text-[10px] text-muted-white/50" role="status">{cameraMode === 'route' ? 'Route overview' : cameraMode === 'follow' ? 'Following plane' : isPhone ? 'Following resumes after 10 idle seconds' : 'Explore map freely'}</p>
       </div>
     </div>
     <div className="absolute right-3 top-3 z-10"><motion.button type="button" disabled={!loaded} onClick={changeStyle} whileTap={{ scale: 0.97 }} className="min-h-[44px] rounded-xl border border-white/15 bg-navy/90 px-3 text-xs text-muted-white/80 hover:text-gold disabled:opacity-40">{mapStyle === 'dark' ? 'Satellite view' : 'Dark view'}</motion.button></div>

@@ -174,7 +174,7 @@ const TrackerPage: React.FC = () => {
           {/* Additional info */}
           <div className="glass-card rounded-xl px-4 py-3 text-center">
             <div className="font-mono text-muted-white/25 text-xs uppercase tracking-widest mb-1">
-              Study Tip
+              Focus Tip
             </div>
             <div className="font-sans text-muted-white/50 text-xs leading-relaxed">
               Phones on airplane mode means fewer interruptions. Stay focused — you're almost there.

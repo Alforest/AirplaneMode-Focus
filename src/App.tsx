@@ -36,6 +36,15 @@ const App: React.FC = () => {
         {phase === 'landing' && (
           <motion.div
             key="landing"
+            onAnimationComplete={definition => {
+              if (definition !== 'animate') return;
+              const anchor = window.location.hash;
+              if (anchor !== '#terminal' && anchor !== '#challenge') return;
+              const target = document.getElementById(anchor.slice(1));
+              target?.focus({ preventScroll: true });
+              if (anchor === '#terminal') window.scrollTo({ top: 0 });
+              else target?.scrollIntoView({ block: 'start' });
+            }}
             variants={pageVariants}
             initial="initial"
             animate="animate"

@@ -49,7 +49,7 @@ const BoardingConfirm: React.FC = () => {
             Your <span className="text-gold">Boarding Pass</span>
           </h2>
           <p className="text-muted-white/40 font-sans mt-3 text-sm">
-            {Math.floor(durationMinutes / 60)}h{durationMinutes % 60 > 0 ? ` ${durationMinutes % 60}m` : ''} study session to {destination.city}
+            {Math.floor(durationMinutes / 60)}h{durationMinutes % 60 > 0 ? ` ${durationMinutes % 60}m` : ''} focus session to {destination.city}
           </p>
         </motion.div>
 

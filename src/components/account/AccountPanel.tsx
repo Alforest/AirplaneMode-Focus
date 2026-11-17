@@ -21,7 +21,7 @@ export default function AccountPanel() {
           <p className="mt-1 text-sm text-muted-white/60 break-words">
             {!ready ? 'Checking your account…' : user
               ? `Signed in as ${user.email ?? 'a Google account'}`
-              : 'Sign in to save flights across devices. Studying is always available as a guest.'}
+              : 'Sign in to save flights across devices. Focusing is always available as a guest.'}
           </p>
         </div>
         {user ? (

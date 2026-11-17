@@ -110,12 +110,14 @@ const Hero: React.FC = () => {
             <ResumeFlightCard key={accountId ?? 'guest'} />
             <PersonalWelcome />
             <motion.h1
+              id="terminal"
+              tabIndex={-1}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="font-serif text-[2.1rem] sm:text-4xl md:text-5xl text-muted-white leading-[1.15] mb-5"
+              className="focus:outline-none font-serif text-[2.1rem] sm:text-4xl md:text-5xl text-muted-white leading-[1.15] mb-5"
             >
-              Your study session becomes <span className="text-gold">a flight.</span>
+              Your focus session becomes <span className="text-gold">a flight.</span>
             </motion.h1>
 
             <motion.p
@@ -124,8 +126,8 @@ const Hero: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.45 }}
               className="text-muted-white/50 text-base sm:text-lg mb-8 sm:mb-10 font-sans font-light tracking-wide"
             >
-              A free study timer for focused work. Phone on airplane mode,
-              pick a real flight, and study until you land.
+              A free focus timer for work, study, or reading. Phone on airplane mode,
+              pick a real flight, and focus until you land.
             </motion.p>
 
             <motion.div
