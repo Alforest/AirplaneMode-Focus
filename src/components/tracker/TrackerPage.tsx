@@ -87,15 +87,13 @@ const TrackerPage: React.FC = () => {
     <div className="min-h-screen bg-navy flex flex-col">
       <FlightExitDialog open={exitOpen} onClose={() => setExitOpen(false)} />
       {/* Top bar */}
-      <motion.div
+      <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b border-gold/10 shrink-0"
+        className="grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-3 items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-b border-gold/10 shrink-0"
       >
-        <button type="button" onClick={() => setExitOpen(true)} className="min-h-[44px] shrink-0 rounded-lg border border-gold/20 px-3 text-sm text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">← Back</button>
-
         {/* Left: flight info */}
-        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+        <div role="group" aria-label="Flight details" className="flex items-center gap-3 sm:gap-4 min-w-0">
           <div>
             <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest">Flight</div>
             <div className="font-mono text-gold font-bold text-base sm:text-lg">{flightInfo?.flightNumber}</div>
@@ -103,28 +101,29 @@ const TrackerPage: React.FC = () => {
           <div className="w-px h-8 bg-gold/10 shrink-0" />
           <div className="min-w-0">
             <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest">Route</div>
-            <div className="font-mono text-muted-white/70 text-sm whitespace-nowrap">
+            <div className="font-mono text-muted-white/70 text-xs sm:text-sm whitespace-nowrap">
               {departure?.iata} → {destination?.iata}
             </div>
           </div>
         </div>
 
         {/* Center: airline */}
-        <div className="hidden md:block text-center">
+        <div role="group" aria-label="Airline details" className="hidden md:block min-w-0 text-center">
           <div className="font-mono text-muted-white/60 text-lg">
             {flightInfo?.airline}
           </div>
           <div className="font-mono text-muted-white/25 text-xs">{flightInfo?.aircraft}</div>
         </div>
 
-        {/* Right: seat */}
-        <div className="hidden sm:flex items-center gap-4 shrink-0">
-          <div className="text-right">
+        {/* Right: flight actions and seat, independent of the centered airline. */}
+        <div className="flex items-center justify-end gap-3 sm:gap-4 min-w-0">
+          <button type="button" onClick={() => setExitOpen(true)} className="min-h-[44px] shrink-0 rounded-lg border border-gold/20 px-3 text-sm text-gold hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">← Back</button>
+          <div className="hidden sm:block text-right">
             <div className="font-mono text-muted-white/30 text-xs uppercase tracking-widest">Seat</div>
             <div className="font-mono text-gold font-bold">{flightInfo?.seat}</div>
           </div>
         </div>
-      </motion.div>
+      </motion.header>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col md:flex-row gap-0 overflow-hidden">
