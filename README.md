@@ -472,3 +472,17 @@ finish before scrolling and focusing its target. Book Another Flight remains ava
 Core UI and homepage metadata describe FocusFlight as a focus timer for work, study,
 reading, and more. Study guides remain specific examples of how to use it; storage keys,
 analytics event names, and database/RPC identifiers retain their existing names.
+
+### Optional financial support
+
+The footer and post-flight support prompts explain that contributions support
+FocusFlight's map costs and ongoing development. The action is labeled **Support
+FocusFlight**, with Buy Me a Coffee identified as the external payment service.
+The prompts keep support optional and show the destination before someone clicks.
+
+`support_prompt_viewed` records a visible prompt, and the existing `coffee_clicked`
+event records the outbound support link. Both include `placement`, `copy_version`,
+`intent`, and `provider`; `support_clarity_v1` identifies this copy. Compare the
+homepage footer and completed-flight placements separately. These are exposure and
+outbound-intent events. Use completed contributions and revenue in Buy Me a Coffee
+to assess monetization; the website does not receive payment confirmations.
